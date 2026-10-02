@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC SQM Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <header class="header">
+        <div>
+            <h1>NETWORK PERFORMANCE MONITORING</h1>
+            <p>SOC • SQM Dashboard</p>
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            SYSTEM ONLINE
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- FILTER -->
+        <section class="filters">
+
+            <select id="branchFilter">
+                <option value="all">All Branch</option>
+            </select>
+
+            <select id="kabupatenFilter">
+                <option value="all">All Kabupaten</option>
+            </select>
+
+            <select id="dateFilter">
+                <option value="all">All Date</option>
+            </select>
+
+            <button onclick="resetFilter()">RESET FILTER</button>
+
+        </section>
+
+        <!-- KPI -->
+        <section class="kpi-grid">
+
+            <div class="kpi-card">
+                <span>Total Traffic</span>
+                <strong id="traffic">0 GB</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>UL TCP Retransmission</span>
+                <strong id="ulRetx">0%</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>DL TCP Retransmission</span>
+                <strong id="dlRetx">0%</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>TCP Connection Success</span>
+                <strong id="tcpSuccess">0%</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>UL Packet Loss</span>
+                <strong id="packetLoss">0%</strong>
+            </div>
+
+            <div class="kpi-card">
+                <span>E2E Delay</span>
+                <strong id="e2eDelay">0 ms</strong>
+            </div>
+
+        </section>
+
+        <!-- CHART -->
+        <section class="dashboard-grid">
+
+            <div class="panel large">
+                <div class="panel-header">
+                    <h2>TCP Retransmission Trend</h2>
+                    <span>Performance Monitoring</span>
+                </div>
+
+                <canvas id="retransmissionChart"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Network Status</h2>
+                </div>
+
+                <canvas id="statusChart"></canvas>
+            </div>
+
+        </section>
+
+        <section class="dashboard-grid">
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>TCP Connection Success</h2>
+                </div>
+
+                <canvas id="tcpChart"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>E2E Delay</h2>
+                </div>
+
+                <canvas id="delayChart"></canvas>
+            </div>
+
+        </section>
+
+        <!-- TOP 5 -->
+        <section class="panel">
+
+            <div class="panel-header">
+                <h2>Top 5 Uplink TCP Retransmission</h2>
+            </div>
+
+            <div id="top5"></div>
+
+        </section>
+
+        <!-- TABLE -->
+        <section class="panel">
+
+            <div class="panel-header">
+                <h2>Branch Performance Overview</h2>
+            </div>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Traffic</th>
+                            <th>UL RETX</th>
+                            <th>DL RETX</th>
+                            <th>TCP Success</th>
+                            <th>Packet Loss</th>
+                            <th>E2E Delay</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="performanceTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        SOC SQM Network Monitoring • Dashboard
+    </footer>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
