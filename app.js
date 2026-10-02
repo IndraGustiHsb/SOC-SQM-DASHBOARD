@@ -1,6 +1,69 @@
-const TRAFFIC_UNIT = "Byte";
-const TRAFFIC_SCALE = 1; // source traffic values are displayed as-is. Change to 1/1000 etc. if required by your source definition.
+const specs = {
 
+    traffic: [
+        "traffic",
+        "Total Traffic(Byte)",
+        "GB",
+        "#00BFFF"
+    ],
+
+    dlRetx: [
+        "dlRetx",
+        "Downlink TCP Retransmission Rate(%)",
+        "%",
+        "#20E887"
+    ],
+
+    ulRetx: [
+        "ulRetx",
+        "Uplink TCP Retransmission Rate(%)",
+        "%",
+        "#FF9D00"
+    ],
+
+    tcp: [
+        "tcp",
+        "TCP Connection Success Rate (Included RST)(%)",
+        "%",
+        "#A84CFF"
+    ],
+
+    dlLoss: [
+        "dlLoss",
+        "Downlink TCP Packet Loss Rate(%)",
+        "%",
+        "#00BFFF"
+    ],
+
+    ulLoss: [
+        "ulLoss",
+        "Uplink TCP Packet Loss Rate(%)",
+        "%",
+        "#FF168C"
+    ],
+
+    e2e: [
+        "e2e",
+        "E2E Delay(ms)",
+        "ms",
+        "#20E887"
+    ],
+
+    synAck: [
+        "synAck",
+        "SYN ACK-ACK Delay(ms)",
+        "ms",
+        "#A84CFF"
+    ],
+
+    synSyn: [
+        "synSyn",
+        "SYN-SYN ACK Delay(ms)",
+        "ms",
+        "#00BFFF"
+    ]
+
+};
 const C = {};
 let rows = [];
 const specs = {
@@ -229,12 +292,60 @@ function bucketKey(ts,period){
   return ts.slice(0,10);
 }
 
-function aggregate(data, key, period){
-  const m=new Map();
-  for(const r of data){
-    const k=bucketKey(r["15 Minutes"],period);
-    if(!m.has(k))m.set(k,[]);
-    m.get(k).push(n(r[key]));
+function aggregate(data, key, period) {
+
+    const m = new Map();
+
+    for (const r of data) {
+
+        const k = bucketKey(
+            r["15 Minutes"],
+            period
+        );
+
+        if (!m.has(k)) {
+            m.set(k, []);
+        }
+
+        m.get(k).push(
+            n(r[key])
+        );
+    }
+
+    const labels = [...m.keys()].sort();
+
+    const vals = labels.map(k => {
+
+        const a = m.get(k);
+
+        // Byte → GB
+        if (key === "Total Traffic(Byte)") {
+
+            return (
+                a.reduce(
+                    (x, y) => x + y,
+                    0
+                )
+                / 1000000000
+            );
+
+        }
+
+        // Metric % dan delay = average
+        return (
+            a.reduce(
+                (x, y) => x + y,
+                0
+            ) / a.length
+        );
+
+    });
+
+    return {
+        labels,
+        vals
+    };
+}
   }
   const labels=[...m.keys()].sort();
   const vals=labels.map(k=>{
@@ -268,8 +379,142 @@ function hexToRgba(hex, alpha) {
 
 function chart(id, data, label, unit, color) {
 
-  if (C[id]) {
-    C[id].destroy();
+    if (C[id]) {
+        C[id].destroy();
+    }
+
+    const ctx = $(id).getContext("2d");
+
+    const gradient = ctx.createLinearGradient(
+        0,
+        0,
+        0,
+        160
+    );
+
+    gradient.addColorStop(
+        0,
+        hexToRgba(color, 0.30)
+    );
+
+    gradient.addColorStop(
+        1,
+        hexToRgba(color, 0.02)
+    );
+
+    C[id] = new Chart($(id), {
+
+        type: "line",
+
+        data: {
+
+            labels: data.labels,
+
+            datasets: [{
+
+                label: label,
+
+                data: data.vals,
+
+                borderColor: color,
+
+                backgroundColor: gradient,
+
+                borderWidth: 2,
+
+                pointRadius: 0,
+
+                pointHoverRadius: 4,
+
+                tension: 0.25,
+
+                fill: true
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+
+                    callbacks: {
+
+                        label: function(c) {
+
+                            return (
+                                c.parsed.y.toFixed(2)
+                                + " "
+                                + unit
+                            );
+
+                        }
+
+                    }
+
+                }
+
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color: "#6fa1bd",
+                        maxTicksLimit: 12
+                    },
+
+                    grid: {
+                        color:
+                            "rgba(0,150,220,.12)"
+                    }
+                },
+
+                y: {
+
+                    ticks: {
+
+                        color: "#75a2bb",
+
+                        callback: function(value) {
+
+                            return value + " " + unit;
+
+                        }
+
+                    },
+
+                    grid: {
+
+                        color:
+                            "rgba(0,150,220,.12)"
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
   }
 
   const ctx = $(id).getContext("2d");
@@ -441,14 +686,24 @@ function chart(id, data, label, unit, color) {
 
 }
 
-function update(){
-  const data=filtered(), period=$("period").value;
-  $("dataCount").textContent=data.length.toLocaleString("id-ID");
-  $("branchCount").textContent=new Set(data.map(r=>r.BRANCH)).size;
-  $("periodInfo").textContent=period==="15m"?"15 Minutes":period==="hourly"?"Hourly":"Daily";
-  $("lastData").textContent=data.length?data.map(r=>r["15 Minutes"]).sort().at(-1):"-";
+for (
+    const [id, [canvas, key, unit, color]]
+    of Object.entries(specs)
+) {
 
-for (const [id, [canvas, key, unit, color]] of Object.entries(specs)) {
+    chart(
+        canvas,
+        aggregate(
+            data,
+            key,
+            period
+        ),
+        key,
+        unit,
+        color
+    );
+
+}
 
   chart(
     canvas,
