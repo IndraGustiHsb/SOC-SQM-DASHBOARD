@@ -34,19 +34,68 @@ function parseCSV(text){
     cell+=ch;
   }
   if(cell!=="" || row.length){row.push(cell);out.push(row)}
-  const headers=out.shift().map(x=>x.trim());
-  return out.map(r=>Object.fromEntries(headers.map((h,i)=>[h,(r[i]||"").trim()])));
+ const headers = out.shift().map(x =>
+  x.trim().replace(/^\uFEFF/, "")
+);
 }
 
 async function init(){
-  const text=await fetch("data/raw_data.csv").then(r=>r.text());
-  rows=parseCSV(text);
-  setupFilters();
-  const dates=rows.map(r=>r["15 Minutes"].slice(0,10)).filter(Boolean);
-  $("dateFrom").value=dates.slice().sort()[0]||"";
-  $("dateTo").value=dates.slice().sort().at(-1)||"";
-  update();
-  setInterval(()=>{$("clock").textContent=new Date().toLocaleString("id-ID")},1000);
+  try {
+    const response = await fetch("./data/raw_data.csv", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `CSV tidak ditemukan. HTTP Status: ${response.status}`
+      );
+    }
+
+    const text = await response.text();
+
+    console.log("CSV berhasil di-load");
+    console.log("Ukuran CSV:", text.length);
+
+    rows = parseCSV(text);
+
+    console.log("Jumlah rows:", rows.length);
+
+    if (!rows.length) {
+      throw new Error("CSV kosong atau tidak memiliki data");
+    }
+
+    console.log("Header:", Object.keys(rows[0]));
+
+    setupFilters();
+
+    const dates = rows
+      .map(r => r["15 Minutes"])
+      .filter(Boolean)
+      .map(v => v.slice(0,10));
+
+    if (dates.length) {
+      const sortedDates = dates.slice().sort();
+
+      $("dateFrom").value = sortedDates[0] || "";
+      $("dateTo").value = sortedDates[sortedDates.length - 1] || "";
+    }
+
+    update();
+
+    setInterval(() => {
+      $("clock").textContent =
+        new Date().toLocaleString("id-ID");
+    }, 1000);
+
+  } catch (e) {
+    console.error("ERROR DASHBOARD:", e);
+
+    alert(
+      "Dashboard gagal memuat data.\n\n" +
+      e.message +
+      "\n\nSilakan tekan F12 → Console untuk melihat detail."
+    );
+  }
 }
 
 function unique(key){return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort()}
@@ -137,4 +186,4 @@ function renderTable(data){
     body.appendChild(tr);
   });
 }
-init().catch(e=>{console.error(e);alert("Gagal membaca data/raw_data.csv");});
+init();
