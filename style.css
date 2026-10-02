@@ -1,277 +1,839 @@
+/* =========================================================
+   SOC - SQM MONITORING DASHBOARD
+   Dark NOC / SQM Dashboard Style
+   ========================================================= */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #080d14;
-    color: #e8eef7;
-    min-height: 100vh;
+:root {
+    --bg: #020b16;
+    --bg-main: #06111e;
+    --header: #071525;
+
+    --panel: #06182a;
+    --panel-2: #071d31;
+
+    --border: #064c7c;
+    --border-soft: #0a3554;
+
+    --text: #edf7ff;
+    --text-soft: #9ab3c9;
+    --text-muted: #63829c;
+
+    --cyan: #00bfff;
+    --cyan-light: #49cfff;
+
+    --green: #27e887;
+    --orange: #ff9d00;
+    --purple: #a84cff;
+    --pink: #ff168c;
+
+    --shadow: rgba(0, 0, 0, 0.35);
 }
 
+/* =========================================================
+   BODY
+   ========================================================= */
+
+body {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(0, 112, 190, 0.08),
+            transparent 35%
+        ),
+        linear-gradient(
+            180deg,
+            #020b16 0%,
+            #04101c 100%
+        );
+
+    color: var(--text);
+
+    min-height: 100vh;
+
+    overflow-x: hidden;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
 .header {
-    background: #0d1520;
-    border-bottom: 1px solid #1d2a3a;
-    padding: 22px 32px;
+    width: 100%;
+
+    min-height: 68px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #061424,
+            #071727,
+            #061322
+        );
+
+    border-bottom: 1px solid #103c5d;
+
+    padding: 14px 30px;
+
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    position: relative;
+}
+
+.header::after {
+    content: "";
+
+    position: absolute;
+
+    bottom: -1px;
+    left: 0;
+
+    width: 100%;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #00aaff,
+            transparent
+        );
+
+    opacity: 0.45;
 }
 
 .header h1 {
-    font-size: 22px;
+    font-size: 23px;
+
+    font-weight: 700;
+
     letter-spacing: 1px;
-    color: #ffffff;
+
+    color: #f4faff;
+
+    line-height: 1.2;
 }
 
 .header p {
-    margin-top: 6px;
-    color: #7f91a8;
+    margin-top: 4px;
+
+    color: #63b5e8;
+
     font-size: 13px;
+
+    letter-spacing: 0.2px;
 }
+
+/* =========================================================
+   STATUS
+   ========================================================= */
 
 .status {
     font-size: 12px;
-    color: #64e291;
+
+    color: #00f08a;
+
     font-weight: bold;
+
     display: flex;
     align-items: center;
-    gap: 8px;
+
+    gap: 9px;
+
+    white-space: nowrap;
 }
 
 .status-dot {
-    width: 9px;
-    height: 9px;
-    background: #45e37b;
+    width: 10px;
+    height: 10px;
+
+    background: #00ef83;
+
     border-radius: 50%;
-    box-shadow: 0 0 10px #45e37b;
+
+    box-shadow:
+        0 0 7px #00ef83,
+        0 0 15px rgba(0, 239, 131, 0.5);
 }
+
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
 
 .container {
-    width: 95%;
+    width: calc(100% - 48px);
+
     max-width: 1600px;
-    margin: 25px auto;
+
+    margin: 16px auto 30px;
 }
 
+/* =========================================================
+   FILTER AREA
+   ========================================================= */
+
 .filters {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        1fr
+        1.2fr
+        1.2fr
+        auto;
+
+    gap: 10px;
+
+    margin-bottom: 12px;
+
+    width: 100%;
 }
 
 .filters select,
+.filters input,
 .filters button {
-    background: #111b28;
-    color: #dce6f3;
-    border: 1px solid #26364a;
+    height: 43px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #061b2e,
+            #041525
+        );
+
+    color: #e4f3ff;
+
+    border: 1px solid #07517f;
+
     border-radius: 7px;
-    padding: 10px 14px;
-    font-size: 13px;
+
+    padding: 0 13px;
+
+    font-size: 12px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.filters select:hover,
+.filters input:hover {
+    border-color: #0879b9;
+}
+
+.filters select:focus,
+.filters input:focus {
+    border-color: #00aeea;
+
+    box-shadow:
+        0 0 0 2px rgba(0, 174, 234, 0.08),
+        0 0 12px rgba(0, 174, 234, 0.15);
 }
 
 .filters select {
-    min-width: 180px;
+    min-width: 0;
+
+    cursor: pointer;
+}
+
+.filters input {
+    min-width: 0;
 }
 
 .filters button {
+    min-width: 105px;
+
     cursor: pointer;
-    font-weight: bold;
+
+    color: #00bfff;
+
+    border-color: #008ad1;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
 }
 
 .filters button:hover {
-    background: #1a293b;
+    background: #07243a;
+
+    border-color: #00bfff;
+
+    box-shadow:
+        0 0 12px rgba(0, 191, 255, 0.15);
 }
+
+/* =========================================================
+   KPI GRID
+   ========================================================= */
 
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
+
+    grid-template-columns:
+        repeat(5, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 12px;
 }
 
+/* =========================================================
+   KPI CARD
+   ========================================================= */
+
 .kpi-card {
-    background: linear-gradient(145deg, #111b28, #0d151f);
-    border: 1px solid #223248;
-    border-radius: 10px;
-    padding: 18px;
-    min-height: 100px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+    position: relative;
+
+    background:
+        linear-gradient(
+            145deg,
+            #061c30,
+            #041321
+        );
+
+    border: 1px solid #07517f;
+
+    border-radius: 8px;
+
+    padding: 15px 17px;
+
+    min-height: 86px;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.02),
+        0 7px 20px var(--shadow);
+
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(0,191,255,0.65),
+            transparent
+        );
+}
+
+.kpi-card:hover {
+    border-color: #008bd0;
+
+    box-shadow:
+        0 0 18px rgba(0, 159, 231, 0.12);
 }
 
 .kpi-card span {
     display: block;
-    color: #8294aa;
-    font-size: 12px;
-    margin-bottom: 12px;
+
+    color: #7fa5c1;
+
+    font-size: 11px;
+
+    margin-bottom: 8px;
+
+    font-weight: 600;
 }
 
 .kpi-card strong {
-    font-size: 24px;
-    color: #f4f8ff;
+    font-size: 21px;
+
+    color: #f4faff;
+
+    font-weight: 700;
+
+    letter-spacing: 0.3px;
 }
+
+/* =========================================================
+   DASHBOARD GRID
+   ========================================================= */
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 18px;
-    margin-bottom: 18px;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 12px;
 }
 
+/* =========================================================
+   PANEL
+   ========================================================= */
+
 .panel {
-    background: #0e1722;
-    border: 1px solid #223248;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 18px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background:
+        linear-gradient(
+            145deg,
+            #051a2c,
+            #041321
+        );
+
+    border: 1px solid #07517f;
+
+    border-radius: 8px;
+
+    padding: 13px 14px;
+
+    margin-bottom: 0;
+
+    min-width: 0;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.015),
+        0 7px 20px rgba(0,0,0,0.25);
+
+    overflow: hidden;
 }
+
+.panel:hover {
+    border-color: #0877b5;
+}
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
 
 .panel-header {
     display: flex;
+
     justify-content: space-between;
+
     align-items: center;
-    margin-bottom: 18px;
+
+    margin-bottom: 8px;
+
+    min-height: 34px;
 }
 
 .panel-header h2 {
-    font-size: 15px;
-    color: #edf4ff;
+    font-size: 13px;
+
+    color: #edf7ff;
+
+    font-weight: 700;
+
+    line-height: 1.2;
 }
 
 .panel-header span {
-    font-size: 11px;
-    color: #70849b;
+    font-size: 10px;
+
+    color: #6ea1c2;
+
+    background: #082844;
+
+    border: 1px solid #0b4165;
+
+    padding: 4px 7px;
+
+    border-radius: 5px;
+
+    white-space: nowrap;
 }
+
+/* =========================================================
+   CHART
+   ========================================================= */
 
 canvas {
     width: 100% !important;
-    max-height: 330px;
+
+    height: 155px !important;
+
+    max-height: 155px;
+
+    display: block;
 }
+
+/* =========================================================
+   TABLE PANEL
+   ========================================================= */
+
+.table-panel {
+    margin-top: 12px;
+}
+
+/* =========================================================
+   TABLE WRAPPER
+   ========================================================= */
 
 .table-wrapper {
     width: 100%;
+
     overflow-x: auto;
+
+    scrollbar-width: thin;
+
+    scrollbar-color: #0b527d #061321;
 }
+
+.table-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #061321;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #0b527d;
+
+    border-radius: 10px;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
 
 table {
     width: 100%;
+
+    min-width: 1100px;
+
     border-collapse: collapse;
-    font-size: 12px;
+
+    font-size: 10px;
+
+    white-space: nowrap;
 }
 
 thead {
-    background: #111e2d;
+    background:
+        linear-gradient(
+            180deg,
+            #08243a,
+            #071d31
+        );
 }
 
 th {
     text-align: left;
-    padding: 13px 10px;
-    color: #8da0b8;
+
+    padding: 8px 9px;
+
+    color: #72a9cb;
+
     font-weight: 600;
-    border-bottom: 1px solid #26364a;
+
+    border-bottom: 1px solid #0a4b73;
+
+    font-size: 10px;
 }
 
 td {
-    padding: 13px 10px;
-    border-bottom: 1px solid #1c2939;
-    color: #d8e1ed;
+    padding: 7px 9px;
+
+    border-bottom: 1px solid #09283f;
+
+    color: #d6e8f5;
+
+    font-size: 10px;
+}
+
+tbody tr {
+    transition:
+        background 0.15s ease;
 }
 
 tbody tr:hover {
-    background: #121f2e;
+    background:
+        rgba(0, 157, 224, 0.07);
 }
 
+/* =========================================================
+   STATUS
+   ========================================================= */
+
 .status-normal {
-    color: #51e28a;
+    color: #42e88a;
+
     font-weight: bold;
 }
 
 .status-warning {
-    color: #f0c75e;
+    color: #ffc247;
+
     font-weight: bold;
 }
 
 .status-critical {
-    color: #ff6262;
+    color: #ff5e68;
+
     font-weight: bold;
 }
 
+/* =========================================================
+   TOP 5
+   ========================================================= */
+
 #top5 {
     display: grid;
-    gap: 10px;
+
+    gap: 8px;
 }
 
 .top-item {
     display: grid;
-    grid-template-columns: 35px 1fr 100px;
+
+    grid-template-columns:
+        30px
+        1fr
+        80px;
+
     align-items: center;
-    gap: 10px;
-    padding: 12px;
-    background: #111c29;
-    border-radius: 7px;
-    border: 1px solid #1d2b3d;
+
+    gap: 8px;
+
+    padding: 9px;
+
+    background: #061a2c;
+
+    border-radius: 6px;
+
+    border: 1px solid #0b3b5b;
 }
 
 .top-number {
     font-weight: bold;
-    color: #6f89a8;
+
+    color: #5296c1;
 }
 
 .top-branch {
-    color: #dce7f5;
+    color: #dceefa;
+
+    font-size: 11px;
 }
 
 .top-value {
     text-align: right;
-    font-weight: bold;
-    color: #ff7777;
-}
 
-footer {
-    text-align: center;
-    padding: 25px;
-    color: #596b80;
+    font-weight: bold;
+
+    color: #ff7777;
+
     font-size: 11px;
 }
 
-/* RESPONSIVE */
+/* =========================================================
+   FOOTER
+   ========================================================= */
 
-@media (max-width: 1200px) {
+footer {
+    text-align: center;
+
+    padding: 18px 10px 5px;
+
+    color: #52738d;
+
+    font-size: 10px;
+
+    letter-spacing: 0.3px;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: #020b16;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #0a466b;
+
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0b6797;
+}
+
+/* =========================================================
+   RESPONSIVE - 1400px
+   ========================================================= */
+
+@media (max-width: 1400px) {
+
+    .container {
+        width: calc(100% - 30px);
+    }
+
+    .dashboard-grid {
+        gap: 10px;
+    }
+
     .kpi-grid {
-        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .kpi-card {
+        padding: 13px;
+    }
+
+    .kpi-card strong {
+        font-size: 19px;
     }
 }
 
+/* =========================================================
+   RESPONSIVE - 1100px
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .filters {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .filters button {
+        width: 100%;
+    }
+
+    .kpi-grid {
+        grid-template-columns:
+            repeat(3, 1fr);
+    }
+
+    .dashboard-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - 800px
+   ========================================================= */
+
 @media (max-width: 800px) {
+
+    .header {
+        padding: 14px 18px;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 10px;
+    }
+
+    .header h1 {
+        font-size: 19px;
+    }
+
+    .header p {
+        font-size: 11px;
+    }
+
+    .status {
+        align-self: flex-end;
+    }
+
+    .container {
+        width: calc(100% - 20px);
+
+        margin-top: 12px;
+    }
+
+    .filters {
+        grid-template-columns: 1fr;
+    }
+
+    .kpi-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
 
-    .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    canvas {
+        height: 180px !important;
 
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+        max-height: 180px;
     }
 }
 
+/* =========================================================
+   RESPONSIVE - 500px
+   ========================================================= */
+
 @media (max-width: 500px) {
+
     .container {
-        width: 92%;
+        width: calc(100% - 14px);
     }
 
     .kpi-grid {
         grid-template-columns: 1fr;
     }
 
-    .filters select,
-    .filters button {
-        width: 100%;
+    .kpi-card {
+        min-height: 75px;
+    }
+
+    .kpi-card strong {
+        font-size: 20px;
+    }
+
+    .panel {
+        padding: 11px;
+    }
+
+    .panel-header h2 {
+        font-size: 12px;
+    }
+
+    canvas {
+        height: 170px !important;
+
+        max-height: 170px;
+    }
+
+    table {
+        min-width: 1050px;
     }
 }
