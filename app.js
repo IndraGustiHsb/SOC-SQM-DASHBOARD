@@ -4,15 +4,70 @@ const TRAFFIC_SCALE = 1; // source traffic values are displayed as-is. Change to
 const C = {};
 let rows = [];
 const specs = {
-  traffic:["traffic","Total Traffic(Byte)","TB"],
-  dlRetx:["dlRetx","Downlink TCP Retransmission Rate(%)","%"],
-  ulRetx:["ulRetx","Uplink TCP Retransmission Rate(%)","%"],
-  tcp:["tcp","TCP Connection Success Rate (Included RST)(%)","%"],
-  dlLoss:["dlLoss","Downlink TCP Packet Loss Rate(%)","%"],
-  ulLoss:["ulLoss","Uplink TCP Packet Loss Rate(%)","%"],
-  e2e:["e2e","E2E Delay(ms)","ms"],
-  synAck:["synAck","SYN ACK-ACK Delay(ms)","ms"],
-  synSyn:["synSyn","SYN-SYN ACK Delay(ms)","ms"]
+
+  traffic: [
+    "traffic",
+    "Total Traffic(Byte)",
+    "Byte",
+    "#00BFFF"
+  ],
+
+  dlRetx: [
+    "dlRetx",
+    "Downlink TCP Retransmission Rate(%)",
+    "%",
+    "#20E887"
+  ],
+
+  ulRetx: [
+    "ulRetx",
+    "Uplink TCP Retransmission Rate(%)",
+    "%",
+    "#FF9D00"
+  ],
+
+  tcp: [
+    "tcp",
+    "TCP Connection Success Rate (Included RST)(%)",
+    "%",
+    "#A84CFF"
+  ],
+
+  dlLoss: [
+    "dlLoss",
+    "Downlink TCP Packet Loss Rate(%)",
+    "%",
+    "#00BFFF"
+  ],
+
+  ulLoss: [
+    "ulLoss",
+    "Uplink TCP Packet Loss Rate(%)",
+    "%",
+    "#FF168C"
+  ],
+
+  e2e: [
+    "e2e",
+    "E2E Delay(ms)",
+    "ms",
+    "#20E887"
+  ],
+
+  synAck: [
+    "synAck",
+    "SYN ACK-ACK Delay(ms)",
+    "ms",
+    "#A84CFF"
+  ],
+
+  synSyn: [
+    "synSyn",
+    "SYN-SYN ACK Delay(ms)",
+    "ms",
+    "#00BFFF"
+  ]
+
 };
 
 const $ = id => document.getElementById(id);
@@ -190,16 +245,200 @@ function aggregate(data, key, period){
   return {labels,vals};
 }
 
-function chart(id,data,label,unit){
-  if(C[id])C[id].destroy();
-  C[id]=new Chart($(id),{
-    type:"line",
-    data:{labels:data.labels,datasets:[{label,data:data.vals,borderWidth:2,pointRadius:1.5,tension:.25,fill:true}]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y.toFixed(2)} ${unit}`}}},
-      scales:{x:{ticks:{color:"#68819a",maxTicksLimit:14},grid:{color:"rgba(90,120,150,.08)"}},
-              y:{ticks:{color:"#68819a"},grid:{color:"rgba(90,120,150,.09)"}}}}
+function hexToRgba(hex, alpha) {
+
+  const r = parseInt(
+    hex.substring(1, 3),
+    16
+  );
+
+  const g = parseInt(
+    hex.substring(3, 5),
+    16
+  );
+
+  const b = parseInt(
+    hex.substring(5, 7),
+    16
+  );
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+
+function chart(id, data, label, unit, color) {
+
+  if (C[id]) {
+    C[id].destroy();
+  }
+
+  const ctx = $(id).getContext("2d");
+
+  // Membuat gradient area di bawah line
+  const gradient = ctx.createLinearGradient(
+    0,
+    0,
+    0,
+    160
+  );
+
+  gradient.addColorStop(
+    0,
+    hexToRgba(color, 0.30)
+  );
+
+  gradient.addColorStop(
+    1,
+    hexToRgba(color, 0.02)
+  );
+
+  C[id] = new Chart($(id), {
+
+    type: "line",
+
+    data: {
+
+      labels: data.labels,
+
+      datasets: [
+
+        {
+          label: label,
+
+          data: data.vals,
+
+          borderColor: color,
+
+          backgroundColor: gradient,
+
+          borderWidth: 2,
+
+          pointRadius: 0,
+
+          pointHoverRadius: 4,
+
+          pointBackgroundColor: color,
+
+          pointBorderColor: "#06182a",
+
+          pointBorderWidth: 2,
+
+          tension: 0.25,
+
+          fill: true
+        }
+
+      ]
+
+    },
+
+    options: {
+
+      responsive: true,
+
+      maintainAspectRatio: false,
+
+      animation: {
+        duration: 500
+      },
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
+      plugins: {
+
+        legend: {
+          display: false
+        },
+
+        tooltip: {
+
+          backgroundColor: "#06182a",
+
+          borderColor: color,
+
+          borderWidth: 1,
+
+          titleColor: "#ffffff",
+
+          bodyColor: "#d9efff",
+
+          padding: 10,
+
+          displayColors: false,
+
+          callbacks: {
+
+            label: function(c) {
+
+              return `${c.parsed.y.toFixed(2)} ${unit}`;
+
+            }
+
+          }
+
+        }
+
+      },
+
+      scales: {
+
+        x: {
+
+          ticks: {
+
+            color: "#6fa1bd",
+
+            maxTicksLimit: 12,
+
+            font: {
+              size: 9
+            }
+
+          },
+
+          grid: {
+
+            color: "rgba(0, 150, 220, 0.12)",
+
+            drawBorder: false
+
+          }
+
+        },
+
+        y: {
+
+          beginAtZero: false,
+
+          ticks: {
+
+            color: "#75a2bb",
+
+            font: {
+              size: 9
+            }
+
+          },
+
+          grid: {
+
+            color: "rgba(0, 150, 220, 0.12)",
+
+            drawBorder: false
+
+          }
+
+        }
+
+      }
+      
+    }
+
   });
+
 }
 
 function update(){
@@ -209,9 +448,18 @@ function update(){
   $("periodInfo").textContent=period==="15m"?"15 Minutes":period==="hourly"?"Hourly":"Daily";
   $("lastData").textContent=data.length?data.map(r=>r["15 Minutes"]).sort().at(-1):"-";
 
-  for(const [id,[canvas,key,unit]] of Object.entries(specs)){
-    chart(canvas,aggregate(data,key,period),key,unit);
-  }
+for (const [id, [canvas, key, unit, color]] of Object.entries(specs)) {
+
+  chart(
+    canvas,
+    aggregate(data, key, period),
+    key,
+    unit,
+    color
+  );
+
+}
+  
   renderTable(data);
 }
 
