@@ -1,77 +1,15 @@
-const specs = {
-
-    traffic: [
-        "traffic",
-        "Total Traffic(Byte)",
-        "GB",
-        "#00BFFF"
-    ],
-
-    dlRetx: [
-        "dlRetx",
-        "Downlink TCP Retransmission Rate(%)",
-        "%",
-        "#20E887"
-    ],
-
-    ulRetx: [
-        "ulRetx",
-        "Uplink TCP Retransmission Rate(%)",
-        "%",
-        "#FF9D00"
-    ],
-
-    tcp: [
-        "tcp",
-        "TCP Connection Success Rate (Included RST)(%)",
-        "%",
-        "#A84CFF"
-    ],
-
-    dlLoss: [
-        "dlLoss",
-        "Downlink TCP Packet Loss Rate(%)",
-        "%",
-        "#00BFFF"
-    ],
-
-    ulLoss: [
-        "ulLoss",
-        "Uplink TCP Packet Loss Rate(%)",
-        "%",
-        "#FF168C"
-    ],
-
-    e2e: [
-        "e2e",
-        "E2E Delay(ms)",
-        "ms",
-        "#20E887"
-    ],
-
-    synAck: [
-        "synAck",
-        "SYN ACK-ACK Delay(ms)",
-        "ms",
-        "#A84CFF"
-    ],
-
-    synSyn: [
-        "synSyn",
-        "SYN-SYN ACK Delay(ms)",
-        "ms",
-        "#00BFFF"
-    ]
-
-};
 const C = {};
 let rows = [];
+
+const TRAFFIC_UNIT = "GB";
+const TRAFFIC_DIVISOR = 1000000000;
+
 const specs = {
 
   traffic: [
     "traffic",
     "Total Traffic(Byte)",
-    "Byte",
+    "GB",
     "#00BFFF"
   ],
 
@@ -133,16 +71,33 @@ const specs = {
 
 };
 
+
+// ======================================================
+// HELPER
+// ======================================================
+
 const $ = id => document.getElementById(id);
-const n = v => { const x=Number(v); return Number.isFinite(x)?x:0; };
+
+const n = value => {
+  const x = Number(value);
+  return Number.isFinite(x) ? x : 0;
+};
+
+
+// ======================================================
+// CSV PARSER
+// ======================================================
 
 function parseCSV(text) {
+
   const out = [];
+
   let row = [];
   let cell = "";
   let quoted = false;
 
   for (let i = 0; i < text.length; i++) {
+
     const ch = text[i];
     const next = text[i + 1];
 
@@ -158,12 +113,15 @@ function parseCSV(text) {
     }
 
     if (ch === "," && !quoted) {
+
       row.push(cell);
       cell = "";
+
       continue;
     }
 
     if ((ch === "\n" || ch === "\r") && !quoted) {
+
       if (ch === "\r" && next === "\n") {
         i++;
       }
@@ -176,6 +134,7 @@ function parseCSV(text) {
       }
 
       row = [];
+
       continue;
     }
 
@@ -183,39 +142,61 @@ function parseCSV(text) {
   }
 
   if (cell !== "" || row.length) {
+
     row.push(cell);
-    out.push(row);
+
+    if (row.some(v => v !== "")) {
+      out.push(row);
+    }
   }
 
   if (!out.length) {
     return [];
   }
 
-  const headers = out.shift().map(x =>
-    x.trim().replace(/^\uFEFF/, "")
+  const headers = out.shift().map(header =>
+    header
+      .trim()
+      .replace(/^\uFEFF/, "")
   );
 
   return out.map(values => {
+
     const obj = {};
 
     headers.forEach((header, index) => {
-      obj[header] = (values[index] ?? "").trim();
+
+      obj[header] =
+        (values[index] ?? "").trim();
+
     });
 
     return obj;
   });
 }
 
-async function init(){
+
+// ======================================================
+// INIT
+// ======================================================
+
+async function init() {
+
   try {
-    const response = await fetch("./data/raw_data.csv", {
-      cache: "no-store"
-    });
+
+    const response = await fetch(
+      "./data/raw_data.csv",
+      {
+        cache: "no-store"
+      }
+    );
 
     if (!response.ok) {
+
       throw new Error(
         `CSV tidak ditemukan. HTTP Status: ${response.status}`
       );
+
     }
 
     const text = await response.text();
@@ -228,514 +209,934 @@ async function init(){
     console.log("Jumlah rows:", rows.length);
 
     if (!rows.length) {
-      throw new Error("CSV kosong atau tidak memiliki data");
+
+      throw new Error(
+        "CSV kosong atau tidak memiliki data"
+      );
+
     }
 
-    console.log("Header:", Object.keys(rows[0]));
+    console.log(
+      "Header:",
+      Object.keys(rows[0])
+    );
 
     setupFilters();
 
     const dates = rows
       .map(r => r["15 Minutes"])
       .filter(Boolean)
-      .map(v => v.slice(0,10));
+      .map(v => v.slice(0, 10));
 
     if (dates.length) {
-      const sortedDates = dates.slice().sort();
 
-      $("dateFrom").value = sortedDates[0] || "";
-      $("dateTo").value = sortedDates[sortedDates.length - 1] || "";
+      const sortedDates =
+        dates.slice().sort();
+
+      $("dateFrom").value =
+        sortedDates[0];
+
+      $("dateTo").value =
+        sortedDates[sortedDates.length - 1];
+
     }
 
     update();
 
     setInterval(() => {
-      $("clock").textContent =
-        new Date().toLocaleString("id-ID");
+
+      if ($("clock")) {
+
+        $("clock").textContent =
+          new Date().toLocaleString("id-ID");
+
+      }
+
     }, 1000);
 
-  } catch (e) {
-    console.error("ERROR DASHBOARD:", e);
+  }
+
+  catch (e) {
+
+    console.error(
+      "ERROR DASHBOARD:",
+      e
+    );
 
     alert(
       "Dashboard gagal memuat data.\n\n" +
       e.message +
-      "\n\nSilakan tekan F12 → Console untuk melihat detail."
+      "\n\nSilakan tekan F12 → Console."
     );
+
   }
+
 }
 
-function unique(key){return [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort()}
 
-function setupFilters(){
-  for(const [id,key] of [["branch","BRANCH"],["kabupaten","KABUPATEN"]]){
-    unique(key).forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;$(id).appendChild(o)});
-  }
-  ["dateFrom","dateTo","period","branch","kabupaten"].forEach(id=>$(id).addEventListener("change",update));
-  $("reset").onclick=()=>{
-    $("dateFrom").value="";$("dateTo").value="";$("period").value="15m";$("branch").value="all";$("kabupaten").value="all";update();
-  };
+// ======================================================
+// UNIQUE FILTER
+// ======================================================
+
+function unique(key) {
+
+  return [
+    ...new Set(
+      rows
+        .map(r => r[key])
+        .filter(Boolean)
+    )
+  ].sort();
+
 }
 
-function filtered(){
-  const from=$("dateFrom").value,to=$("dateTo").value,b=$("branch").value,k=$("kabupaten").value;
-  return rows.filter(r=>{
-    const d=r["15 Minutes"].slice(0,10);
-    return (!from||d>=from)&&(!to||d<=to)&&(b==="all"||r.BRANCH===b)&&(k==="all"||r.KABUPATEN===k);
+
+// ======================================================
+// FILTER SETUP
+// ======================================================
+
+function setupFilters() {
+
+  for (
+    const [id, key] of [
+      ["branch", "BRANCH"],
+      ["kabupaten", "KABUPATEN"]
+    ]
+  ) {
+
+    unique(key).forEach(value => {
+
+      const option =
+        document.createElement("option");
+
+      option.value = value;
+      option.textContent = value;
+
+      $(id).appendChild(option);
+
+    });
+
+  }
+
+
+  [
+    "dateFrom",
+    "dateTo",
+    "period",
+    "branch",
+    "kabupaten"
+  ].forEach(id => {
+
+    $(id).addEventListener(
+      "change",
+      update
+    );
+
   });
+
+
+  $("reset").onclick = () => {
+
+    $("dateFrom").value = "";
+
+    $("dateTo").value = "";
+
+    $("period").value = "15m";
+
+    $("branch").value = "all";
+
+    $("kabupaten").value = "all";
+
+    update();
+
+  };
+
 }
 
-function bucketKey(ts,period){
-  const d=new Date(ts.replace(" ","T"));
-  if(period==="15m") return ts.slice(0,16);
-  if(period==="hourly") return ts.slice(0,13)+":00";
-  return ts.slice(0,10);
+
+// ======================================================
+// FILTER DATA
+// ======================================================
+
+function filtered() {
+
+  const from =
+    $("dateFrom").value;
+
+  const to =
+    $("dateTo").value;
+
+  const branch =
+    $("branch").value;
+
+  const kabupaten =
+    $("kabupaten").value;
+
+
+  return rows.filter(r => {
+
+    const date =
+      r["15 Minutes"].slice(0, 10);
+
+    return (
+
+      (!from || date >= from) &&
+
+      (!to || date <= to) &&
+
+      (branch === "all" ||
+        r.BRANCH === branch) &&
+
+      (kabupaten === "all" ||
+        r.KABUPATEN === kabupaten)
+
+    );
+
+  });
+
 }
+
+
+// ======================================================
+// TIME BUCKET
+// ======================================================
+
+function bucketKey(ts, period) {
+
+  if (period === "15m") {
+
+    return ts.slice(0, 16);
+
+  }
+
+  if (period === "hourly") {
+
+    return ts.slice(0, 13) + ":00";
+
+  }
+
+  return ts.slice(0, 10);
+
+}
+
+
+// ======================================================
+// AGGREGATION
+// ======================================================
 
 function aggregate(data, key, period) {
 
-    const m = new Map();
+  const buckets = new Map();
 
-    for (const r of data) {
+  for (const r of data) {
 
-        const k = bucketKey(
-            r["15 Minutes"],
-            period
-        );
+    const bucket =
+      bucketKey(
+        r["15 Minutes"],
+        period
+      );
 
-        if (!m.has(k)) {
-            m.set(k, []);
-        }
+    if (!buckets.has(bucket)) {
 
-        m.get(k).push(
-            n(r[key])
-        );
+      buckets.set(
+        bucket,
+        []
+      );
+
     }
 
-    const labels = [...m.keys()].sort();
+    buckets
+      .get(bucket)
+      .push(
+        n(r[key])
+      );
 
-    const vals = labels.map(k => {
+  }
 
-        const a = m.get(k);
 
-        // Byte → GB
-        if (key === "Total Traffic(Byte)") {
+  const labels =
+    [...buckets.keys()].sort();
 
-            return (
-                a.reduce(
-                    (x, y) => x + y,
-                    0
-                )
-                / 1000000000
-            );
 
-        }
+  const values =
+    labels.map(label => {
 
-        // Metric % dan delay = average
+      const values =
+        buckets.get(label);
+
+
+      // ==========================================
+      // TOTAL TRAFFIC
+      // BYTE → GB
+      // ==========================================
+
+      if (
+        key === "Total Traffic(Byte)"
+      ) {
+
+        const totalByte =
+          values.reduce(
+            (sum, value) =>
+              sum + value,
+            0
+          );
+
         return (
-            a.reduce(
-                (x, y) => x + y,
-                0
-            ) / a.length
+          totalByte /
+          TRAFFIC_DIVISOR
         );
+
+      }
+
+
+      // ==========================================
+      // OTHER METRICS
+      // AVERAGE
+      // ==========================================
+
+      return (
+        values.reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        ) / values.length
+      );
 
     });
 
-    return {
-        labels,
-        vals
-    };
+
+  return {
+    labels,
+    vals: values
+  };
+
 }
-  }
-  const labels=[...m.keys()].sort();
-  const vals=labels.map(k=>{
-    const a=m.get(k);
-    if(key==="Total Traffic(Byte)") return a.reduce((x,y)=>x+y,0)*TRAFFIC_SCALE;
-    return a.reduce((x,y)=>x+y,0)/a.length;
-  });
-  return {labels,vals};
-}
+
+
+// ======================================================
+// HEX → RGBA
+// ======================================================
 
 function hexToRgba(hex, alpha) {
 
-  const r = parseInt(
-    hex.substring(1, 3),
-    16
-  );
+  const r =
+    parseInt(
+      hex.substring(1, 3),
+      16
+    );
 
-  const g = parseInt(
-    hex.substring(3, 5),
-    16
-  );
+  const g =
+    parseInt(
+      hex.substring(3, 5),
+      16
+    );
 
-  const b = parseInt(
-    hex.substring(5, 7),
-    16
-  );
+  const b =
+    parseInt(
+      hex.substring(5, 7),
+      16
+    );
 
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  return `
+    rgba(
+      ${r},
+      ${g},
+      ${b},
+      ${alpha}
+    )
+  `;
+
 }
 
 
-function chart(id, data, label, unit, color) {
+// ======================================================
+// CHART
+// ======================================================
 
-    if (C[id]) {
-        C[id].destroy();
-    }
+function chart(
+  id,
+  data,
+  label,
+  unit,
+  color
+) {
 
-    const ctx = $(id).getContext("2d");
+  if (C[id]) {
 
-    const gradient = ctx.createLinearGradient(
-        0,
-        0,
-        0,
-        160
-    );
+    C[id].destroy();
 
-    gradient.addColorStop(
-        0,
-        hexToRgba(color, 0.30)
-    );
-
-    gradient.addColorStop(
-        1,
-        hexToRgba(color, 0.02)
-    );
-
-    C[id] = new Chart($(id), {
-
-        type: "line",
-
-        data: {
-
-            labels: data.labels,
-
-            datasets: [{
-
-                label: label,
-
-                data: data.vals,
-
-                borderColor: color,
-
-                backgroundColor: gradient,
-
-                borderWidth: 2,
-
-                pointRadius: 0,
-
-                pointHoverRadius: 4,
-
-                tension: 0.25,
-
-                fill: true
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            interaction: {
-                mode: "index",
-                intersect: false
-            },
-
-            plugins: {
-
-                legend: {
-                    display: false
-                },
-
-                tooltip: {
-
-                    callbacks: {
-
-                        label: function(c) {
-
-                            return (
-                                c.parsed.y.toFixed(2)
-                                + " "
-                                + unit
-                            );
-
-                        }
-
-                    }
-
-                }
-
-            },
-
-            scales: {
-
-                x: {
-                    ticks: {
-                        color: "#6fa1bd",
-                        maxTicksLimit: 12
-                    },
-
-                    grid: {
-                        color:
-                            "rgba(0,150,220,.12)"
-                    }
-                },
-
-                y: {
-
-                    ticks: {
-
-                        color: "#75a2bb",
-
-                        callback: function(value) {
-
-                            return value + " " + unit;
-
-                        }
-
-                    },
-
-                    grid: {
-
-                        color:
-                            "rgba(0,150,220,.12)"
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    });
-
-}
   }
 
-  const ctx = $(id).getContext("2d");
 
-  // Membuat gradient area di bawah line
-  const gradient = ctx.createLinearGradient(
-    0,
-    0,
-    0,
-    160
-  );
+  const canvas =
+    $(id);
+
+  if (!canvas) {
+
+    console.warn(
+      `Canvas #${id} tidak ditemukan`
+    );
+
+    return;
+
+  }
+
+
+  const ctx =
+    canvas.getContext("2d");
+
+
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      160
+    );
+
 
   gradient.addColorStop(
     0,
-    hexToRgba(color, 0.30)
+    hexToRgba(
+      color,
+      0.30
+    )
   );
+
 
   gradient.addColorStop(
     1,
-    hexToRgba(color, 0.02)
+    hexToRgba(
+      color,
+      0.02
+    )
   );
 
-  C[id] = new Chart($(id), {
 
-    type: "line",
+  C[id] = new Chart(
+    canvas,
+    {
 
-    data: {
+      type: "line",
 
-      labels: data.labels,
+      data: {
 
-      datasets: [
+        labels:
+          data.labels,
 
-        {
-          label: label,
+        datasets: [
 
-          data: data.vals,
+          {
 
-          borderColor: color,
+            label,
 
-          backgroundColor: gradient,
+            data:
+              data.vals,
 
-          borderWidth: 2,
+            borderColor:
+              color,
 
-          pointRadius: 0,
+            backgroundColor:
+              gradient,
 
-          pointHoverRadius: 4,
+            borderWidth: 2,
 
-          pointBackgroundColor: color,
+            pointRadius: 0,
 
-          pointBorderColor: "#06182a",
+            pointHoverRadius: 4,
 
-          pointBorderWidth: 2,
+            pointBackgroundColor:
+              color,
 
-          tension: 0.25,
+            pointBorderColor:
+              "#06182a",
 
-          fill: true
-        }
+            pointBorderWidth: 2,
 
-      ]
+            tension: 0.25,
 
-    },
+            fill: true
 
-    options: {
+          }
 
-      responsive: true,
+        ]
 
-      maintainAspectRatio: false,
-
-      animation: {
-        duration: 500
       },
 
-      interaction: {
-        mode: "index",
-        intersect: false
-      },
 
-      plugins: {
+      options: {
 
-        legend: {
-          display: false
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        animation: {
+          duration: 500
         },
 
-        tooltip: {
+        interaction: {
 
-          backgroundColor: "#06182a",
+          mode: "index",
 
-          borderColor: color,
+          intersect: false
 
-          borderWidth: 1,
+        },
 
-          titleColor: "#ffffff",
 
-          bodyColor: "#d9efff",
+        plugins: {
 
-          padding: 10,
+          legend: {
+            display: false
+          },
 
-          displayColors: false,
 
-          callbacks: {
+          tooltip: {
 
-            label: function(c) {
+            backgroundColor:
+              "#06182a",
 
-              return `${c.parsed.y.toFixed(2)} ${unit}`;
+            borderColor:
+              color,
+
+            borderWidth: 1,
+
+            titleColor:
+              "#ffffff",
+
+            bodyColor:
+              "#d9efff",
+
+            padding: 10,
+
+            displayColors: false,
+
+
+            callbacks: {
+
+              label: function(context) {
+
+                return (
+                  context.parsed.y
+                    .toFixed(2)
+                  + " "
+                  + unit
+                );
+
+              }
 
             }
 
           }
 
-        }
-
-      },
-
-      scales: {
-
-        x: {
-
-          ticks: {
-
-            color: "#6fa1bd",
-
-            maxTicksLimit: 12,
-
-            font: {
-              size: 9
-            }
-
-          },
-
-          grid: {
-
-            color: "rgba(0, 150, 220, 0.12)",
-
-            drawBorder: false
-
-          }
-
         },
 
-        y: {
 
-          beginAtZero: false,
+        scales: {
 
-          ticks: {
+          x: {
 
-            color: "#75a2bb",
+            ticks: {
 
-            font: {
-              size: 9
+              color:
+                "#6fa1bd",
+
+              maxTicksLimit:
+                12,
+
+              font: {
+                size: 9
+              }
+
+            },
+
+            grid: {
+
+              color:
+                "rgba(0,150,220,0.12)",
+
+              drawBorder:
+                false
+
             }
 
           },
 
-          grid: {
 
-            color: "rgba(0, 150, 220, 0.12)",
+          y: {
 
-            drawBorder: false
+            beginAtZero: false,
+
+            ticks: {
+
+              color:
+                "#75a2bb",
+
+              font: {
+                size: 9
+              },
+
+              callback:
+                function(value) {
+
+                  return (
+                    value +
+                    " " +
+                    unit
+                  );
+
+                }
+
+            },
+
+            grid: {
+
+              color:
+                "rgba(0,150,220,0.12)",
+
+              drawBorder:
+                false
+
+            }
 
           }
 
         }
 
       }
-      
+
     }
-
-  });
-
-}
-
-for (
-    const [id, [canvas, key, unit, color]]
-    of Object.entries(specs)
-) {
-
-    chart(
-        canvas,
-        aggregate(
-            data,
-            key,
-            period
-        ),
-        key,
-        unit,
-        color
-    );
-
-}
-
-  chart(
-    canvas,
-    aggregate(data, key, period),
-    key,
-    unit,
-    color
   );
 
 }
-  
-  renderTable(data);
+
+
+// ======================================================
+// AVERAGE
+// ======================================================
+
+function average(data, key) {
+
+  if (!data.length) {
+    return 0;
+  }
+
+  return (
+    data.reduce(
+      (sum, row) =>
+        sum + n(row[key]),
+      0
+    ) / data.length
+  );
+
 }
 
-function renderTable(data){
-  const body=$("tableBody");body.innerHTML="";
-  data.slice().sort((a,b)=>b["15 Minutes"].localeCompare(a["15 Minutes"])).slice(0,500).forEach(r=>{
-    const tr=document.createElement("tr");
-    const vals=[
-      r["15 Minutes"],r.BRANCH,r.KABUPATEN,
-      n(r["Total Traffic(Byte)"]).toFixed(4),
-      n(r["Downlink TCP Retransmission Rate(%)"]).toFixed(2),
-      n(r["Uplink TCP Retransmission Rate(%)"]).toFixed(2),
-      n(r["TCP Connection Success Rate (Included RST)(%)"]).toFixed(2),
-      n(r["Downlink TCP Packet Loss Rate(%)"]).toFixed(2),
-      n(r["Uplink TCP Packet Loss Rate(%)"]).toFixed(2),
-      n(r["E2E Delay(ms)"]).toFixed(0),
-      n(r["SYN ACK-ACK Delay(ms)"]).toFixed(0),
-      n(r["SYN-SYN ACK Delay(ms)"]).toFixed(0)
-    ];
-    vals.forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});
-    body.appendChild(tr);
-  });
+
+// ======================================================
+// KPI
+// ======================================================
+
+function updateKpis(data) {
+
+  if (!data.length) {
+
+    if ($("kpiTraffic"))
+      $("kpiTraffic").textContent = "-";
+
+    if ($("kpiTcp"))
+      $("kpiTcp").textContent = "-";
+
+    if ($("kpiDlRetx"))
+      $("kpiDlRetx").textContent = "-";
+
+    if ($("kpiUlRetx"))
+      $("kpiUlRetx").textContent = "-";
+
+    if ($("kpiE2e"))
+      $("kpiE2e").textContent = "-";
+
+    return;
+
+  }
+
+
+  // Total Byte → GB
+  const totalTrafficGB =
+    data.reduce(
+      (sum, row) =>
+        sum +
+        n(row["Total Traffic(Byte)"]),
+      0
+    ) / TRAFFIC_DIVISOR;
+
+
+  if ($("kpiTraffic")) {
+
+    $("kpiTraffic").textContent =
+      totalTrafficGB.toLocaleString(
+        "id-ID",
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }
+      ) + " GB";
+
+  }
+
+
+  if ($("kpiTcp")) {
+
+    $("kpiTcp").textContent =
+      average(
+        data,
+        "TCP Connection Success Rate (Included RST)(%)"
+      ).toFixed(2) + " %";
+
+  }
+
+
+  if ($("kpiDlRetx")) {
+
+    $("kpiDlRetx").textContent =
+      average(
+        data,
+        "Downlink TCP Retransmission Rate(%)"
+      ).toFixed(2) + " %";
+
+  }
+
+
+  if ($("kpiUlRetx")) {
+
+    $("kpiUlRetx").textContent =
+      average(
+        data,
+        "Uplink TCP Retransmission Rate(%)"
+      ).toFixed(2) + " %";
+
+  }
+
+
+  if ($("kpiE2e")) {
+
+    $("kpiE2e").textContent =
+      average(
+        data,
+        "E2E Delay(ms)"
+      ).toFixed(2) + " ms";
+
+  }
+
 }
+
+
+// ======================================================
+// UPDATE DASHBOARD
+// ======================================================
+
+function update() {
+
+  const data =
+    filtered();
+
+  const period =
+    $("period").value;
+
+
+  // ====================================================
+  // INFO
+  // ====================================================
+
+  $("dataCount").textContent =
+    data.length.toLocaleString(
+      "id-ID"
+    );
+
+
+  $("branchCount").textContent =
+    new Set(
+      data.map(
+        r => r.BRANCH
+      )
+    ).size;
+
+
+  $("periodInfo").textContent =
+    period === "15m"
+      ? "15 Minutes"
+      : period === "hourly"
+        ? "Hourly"
+        : "Daily";
+
+
+  $("lastData").textContent =
+    data.length
+      ? data
+          .map(
+            r => r["15 Minutes"]
+          )
+          .sort()
+          .at(-1)
+      : "-";
+
+
+  // ====================================================
+  // KPI
+  // ====================================================
+
+  updateKpis(data);
+
+
+  // ====================================================
+  // CHARTS
+  // ====================================================
+
+  for (
+    const [
+      id,
+      [canvas, key, unit, color]
+    ]
+    of Object.entries(specs)
+  ) {
+
+    const aggregated =
+      aggregate(
+        data,
+        key,
+        period
+      );
+
+
+    chart(
+      canvas,
+      aggregated,
+      key,
+      unit,
+      color
+    );
+
+  }
+
+
+  // ====================================================
+  // TABLE
+  // ====================================================
+
+  renderTable(data);
+
+}
+
+
+// ======================================================
+// TABLE
+// ======================================================
+
+function renderTable(data) {
+
+  const body =
+    $("tableBody");
+
+  body.innerHTML = "";
+
+
+  data
+    .slice()
+    .sort(
+      (a, b) =>
+        b["15 Minutes"]
+          .localeCompare(
+            a["15 Minutes"]
+          )
+    )
+    .slice(0, 500)
+    .forEach(r => {
+
+      const tr =
+        document.createElement("tr");
+
+
+      const trafficGB =
+        n(
+          r["Total Traffic(Byte)"]
+        ) / TRAFFIC_DIVISOR;
+
+
+      const vals = [
+
+        r["15 Minutes"],
+
+        r.BRANCH,
+
+        r.KABUPATEN,
+
+        trafficGB.toFixed(4) + " GB",
+
+        n(
+          r[
+            "Downlink TCP Retransmission Rate(%)"
+          ]
+        ).toFixed(2) + " %",
+
+        n(
+          r[
+            "Uplink TCP Retransmission Rate(%)"
+          ]
+        ).toFixed(2) + " %",
+
+        n(
+          r[
+            "TCP Connection Success Rate (Included RST)(%)"
+          ]
+        ).toFixed(2) + " %",
+
+        n(
+          r[
+            "Downlink TCP Packet Loss Rate(%)"
+          ]
+        ).toFixed(2) + " %",
+
+        n(
+          r[
+            "Uplink TCP Packet Loss Rate(%)"
+          ]
+        ).toFixed(2) + " %",
+
+        n(
+          r["E2E Delay(ms)"]
+        ).toFixed(0) + " ms",
+
+        n(
+          r["SYN ACK-ACK Delay(ms)"]
+        ).toFixed(0) + " ms",
+
+        n(
+          r["SYN-SYN ACK Delay(ms)"]
+        ).toFixed(0) + " ms"
+
+      ];
+
+
+      vals.forEach(value => {
+
+        const td =
+          document.createElement("td");
+
+        td.textContent =
+          value;
+
+        tr.appendChild(td);
+
+      });
+
+
+      body.appendChild(tr);
+
+    });
+
+}
+
+
+// ======================================================
+// START
+// ======================================================
+
 init();
