@@ -1,66 +1,698 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SOC • SQM Monitoring</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>SOC - SQM Monitoring</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-  <header class="header">
-    <div>
-      <h1>SOC • SQM MONITORING</h1>
-      <p>Network Quality Performance Monitoring</p>
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header class="header">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            ◈
+        </div>
+
+        <div>
+            <h1>SOC - SQM MONITORING</h1>
+
+            <p>
+                Network Quality Performance Monitoring
+            </p>
+        </div>
+
     </div>
-    <div class="status"><span class="status-dot"></span>SYSTEM ONLINE <span id="clock"></span></div>
-  </header>
 
-  <main class="container">
-    <section class="filters">
-      <div><label for="dateFrom">Date From</label><input id="dateFrom" type="date"></div>
-      <div><label for="dateTo">Date To</label><input id="dateTo" type="date"></div>
-      <div><label for="period">Period</label><select id="period"><option value="15m">15 Minutes</option><option value="hourly">Hourly</option><option value="daily">Daily</option></select></div>
-      <div><label for="branch">Branch</label><select id="branch"><option value="all">All Branch</option></select></div>
-      <div><label for="kabupaten">Kabupaten</label><select id="kabupaten"><option value="all">All Kabupaten</option></select></div>
-      <button id="reset" type="button">RESET</button>
-    </section>
+    <div class="header-right">
 
-    <section class="info-grid">
-      <div class="kpi-card"><span>Data Point</span><strong id="dataCount">0</strong></div>
-      <div class="kpi-card"><span>Branch</span><strong id="branchCount">0</strong></div>
-      <div class="kpi-card"><span>Period</span><strong id="periodInfo">15 Minutes</strong></div>
-      <div class="kpi-card"><span>Last Data</span><strong id="lastData">-</strong></div>
-    </section>
+        <div class="status">
+            <span class="status-dot"></span>
+            MONITORING
+        </div>
 
-    <section class="dashboard-grid">
-      <div class="panel large"><div class="panel-header"><h2>Total Traffic</h2><span>TB</span></div><div class="chart-wrap"><canvas id="traffic"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>Downlink TCP Retransmission Rate</h2><span>%</span></div><div class="chart-wrap"><canvas id="dlRetx"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>Uplink TCP Retransmission Rate</h2><span>%</span></div><div class="chart-wrap"><canvas id="ulRetx"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>TCP Connection Success Rate (Included RST)</h2><span>%</span></div><div class="chart-wrap"><canvas id="tcp"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>Downlink TCP Packet Loss Rate</h2><span>%</span></div><div class="chart-wrap"><canvas id="dlLoss"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>Uplink TCP Packet Loss Rate</h2><span>%</span></div><div class="chart-wrap"><canvas id="ulLoss"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>E2E Delay</h2><span>ms</span></div><div class="chart-wrap"><canvas id="e2e"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>SYN ACK-ACK Delay</h2><span>ms</span></div><div class="chart-wrap"><canvas id="synAck"></canvas></div></div>
-      <div class="panel"><div class="panel-header"><h2>SYN-SYN ACK Delay</h2><span>ms</span></div><div class="chart-wrap"><canvas id="synSyn"></canvas></div></div>
-    </section>
+        <div class="clock">
+            <span>◷</span>
+            <span id="clock">-</span>
+        </div>
 
-    <section class="panel">
-      <div class="panel-header"><h2>SQM Detail Data</h2><span>Latest 500 records</span></div>
-      <div class="table-wrapper">
+    </div>
+
+</header>
+
+
+<main class="container">
+
+
+<!-- =====================================================
+     FILTER
+===================================================== -->
+
+<section class="filters">
+
+    <div class="filter-group">
+
+        <label>DATE FROM</label>
+
+        <input
+            type="date"
+            id="dateFrom"
+        >
+
+    </div>
+
+
+    <div class="filter-group">
+
+        <label>DATE TO</label>
+
+        <input
+            type="date"
+            id="dateTo"
+        >
+
+    </div>
+
+
+    <div class="filter-group">
+
+        <label>PERIOD</label>
+
+        <select id="period">
+
+            <option value="15m">
+                15 Minutes
+            </option>
+
+            <option value="hourly">
+                Hourly
+            </option>
+
+            <option value="daily">
+                Daily
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="filter-group">
+
+        <label>BRANCH</label>
+
+        <select id="branch">
+
+            <option value="all">
+                All Branch
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="filter-group">
+
+        <label>KABUPATEN</label>
+
+        <select id="kabupaten">
+
+            <option value="all">
+                All Kabupaten
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <button
+        id="reset"
+        class="reset-button"
+    >
+        ↻ RESET
+    </button>
+
+</section>
+
+
+<!-- =====================================================
+     KPI
+===================================================== -->
+
+<section class="kpi-grid">
+
+
+    <div class="kpi-card">
+
+        <div class="kpi-icon">
+            ◉
+        </div>
+
+        <div class="kpi-content">
+
+            <span>
+                TOTAL TRAFFIC
+            </span>
+
+            <strong id="kpiTraffic">
+                -
+            </strong>
+
+        </div>
+
+        <small>
+            Traffic volume over monitoring time
+        </small>
+
+    </div>
+
+
+    <div class="kpi-card">
+
+        <div class="kpi-icon cyan">
+            ↗
+        </div>
+
+        <div class="kpi-content">
+
+            <span>
+                TCP CONNECTION SUCCESS RATE
+            </span>
+
+            <strong id="kpiTcp">
+                -
+            </strong>
+
+        </div>
+
+        <small>
+            TCP success rate (Included RST)
+        </small>
+
+    </div>
+
+
+    <div class="kpi-card">
+
+        <div class="kpi-icon green">
+            ↓
+        </div>
+
+        <div class="kpi-content">
+
+            <span>
+                DOWNLINK TCP RETRANSMISSION
+            </span>
+
+            <strong id="kpiDlRetx">
+                -
+            </strong>
+
+        </div>
+
+        <small>
+            Downlink TCP retransmission monitoring
+        </small>
+
+    </div>
+
+
+    <div class="kpi-card">
+
+        <div class="kpi-icon orange">
+            ↑
+        </div>
+
+        <div class="kpi-content">
+
+            <span>
+                UPLINK TCP RETRANSMISSION
+            </span>
+
+            <strong id="kpiUlRetx">
+                -
+            </strong>
+
+        </div>
+
+        <small>
+            Uplink TCP retransmission monitoring
+        </small>
+
+    </div>
+
+
+    <div class="kpi-card">
+
+        <div class="kpi-icon purple">
+            ◷
+        </div>
+
+        <div class="kpi-content">
+
+            <span>
+                E2E DELAY
+            </span>
+
+            <strong id="kpiE2e">
+                -
+            </strong>
+
+        </div>
+
+        <small>
+            End to end network delay
+        </small>
+
+    </div>
+
+
+</section>
+
+
+<!-- =====================================================
+     CHART GRID
+===================================================== -->
+
+<section class="dashboard-grid">
+
+
+    <!-- TOTAL TRAFFIC -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    Total Traffic
+                </h2>
+
+                <p>
+                    Traffic volume over monitoring time
+                </p>
+            </div>
+
+            <span>
+                Byte
+            </span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="traffic"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- DOWNLINK RETX -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    Downlink TCP Retransmission Rate
+                </h2>
+
+                <p>
+                    Downlink TCP retransmission monitoring
+                </p>
+            </div>
+
+            <span>%</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="dlRetx"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- UPLINK RETX -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    Uplink TCP Retransmission Rate
+                </h2>
+
+                <p>
+                    Uplink TCP retransmission monitoring
+                </p>
+            </div>
+
+            <span>%</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="ulRetx"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- TCP SUCCESS -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    TCP Connection Success Rate
+                </h2>
+
+                <p>
+                    TCP success rate (Included RST)
+                </p>
+            </div>
+
+            <span>%</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="tcp"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- DOWNLINK LOSS -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    Downlink TCP Packet Loss Rate
+                </h2>
+
+                <p>
+                    Downlink packet loss monitoring
+                </p>
+            </div>
+
+            <span>%</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="dlLoss"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- UPLINK LOSS -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    Uplink TCP Packet Loss Rate
+                </h2>
+
+                <p>
+                    Uplink packet loss monitoring
+                </p>
+            </div>
+
+            <span>%</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="ulLoss"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- E2E -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    E2E Delay
+                </h2>
+
+                <p>
+                    End to end network delay
+                </p>
+            </div>
+
+            <span>ms</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="e2e"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- SYN ACK -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    SYN ACK-ACK Delay
+                </h2>
+
+                <p>
+                    TCP handshake delay
+                </p>
+            </div>
+
+            <span>ms</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="synAck"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- SYN SYN ACK -->
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>
+                    SYN-SYN ACK Delay
+                </h2>
+
+                <p>
+                    TCP connection setup delay
+                </p>
+            </div>
+
+            <span>ms</span>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="synSyn"></canvas>
+        </div>
+
+    </div>
+
+
+</section>
+
+
+<!-- =====================================================
+     DATA TABLE
+===================================================== -->
+
+<section class="panel table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                SQM MONITORING DATA
+            </h2>
+
+            <p>
+                Detailed network quality monitoring data
+            </p>
+
+        </div>
+
+        <div class="table-info">
+
+            <span>
+                Period:
+            </span>
+
+            <strong id="periodInfo">
+                15 Minutes
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
         <table>
-          <thead><tr>
-            <th>15 Minutes</th><th>Branch</th><th>Kabupaten</th><th>Traffic</th>
-            <th>DL RETX</th><th>UL RETX</th><th>TCP Success</th><th>DL Loss</th><th>UL Loss</th>
-            <th>E2E Delay</th><th>SYN ACK-ACK</th><th>SYN-SYN ACK</th>
-          </tr></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
 
-  <footer>SOC • SQM Network Monitoring</footer>
-  <script src="app.js"></script>
+            <thead>
+
+                <tr>
+
+                    <th>
+                        DATE / TIME
+                    </th>
+
+                    <th>
+                        BRANCH
+                    </th>
+
+                    <th>
+                        KABUPATEN
+                    </th>
+
+                    <th>
+                        TOTAL TRAFFIC
+                    </th>
+
+                    <th>
+                        DL TCP RETX
+                    </th>
+
+                    <th>
+                        UL TCP RETX
+                    </th>
+
+                    <th>
+                        TCP SUCCESS
+                    </th>
+
+                    <th>
+                        DL PACKET LOSS
+                    </th>
+
+                    <th>
+                        UL PACKET LOSS
+                    </th>
+
+                    <th>
+                        E2E DELAY
+                    </th>
+
+                    <th>
+                        SYN ACK-ACK
+                    </th>
+
+                    <th>
+                        SYN-SYN ACK
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="tableBody">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <div class="table-footer">
+
+        <div>
+            Data:
+            <strong id="dataCount">
+                0
+            </strong>
+        </div>
+
+        <div>
+            Branch:
+            <strong id="branchCount">
+                0
+            </strong>
+        </div>
+
+        <div>
+            Last Data:
+            <strong id="lastData">
+                -
+            </strong>
+        </div>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer>
+
+    Network Quality Performance Monitoring System
+
+</footer>
+
+
+<script src="app.js"></script>
+
 </body>
 </html>
