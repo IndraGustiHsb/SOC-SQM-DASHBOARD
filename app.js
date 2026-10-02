@@ -1,4 +1,4 @@
-const TRAFFIC_UNIT = "TB";
+const TRAFFIC_UNIT = "Byte";
 const TRAFFIC_SCALE = 1; // source traffic values are displayed as-is. Change to 1/1000 etc. if required by your source definition.
 
 const C = {};
@@ -18,25 +18,74 @@ const specs = {
 const $ = id => document.getElementById(id);
 const n = v => { const x=Number(v); return Number.isFinite(x)?x:0; };
 
-function parseCSV(text){
-  const out=[]; let row=[], cell="", quoted=false;
-  for(let i=0;i<text.length;i++){
-    const ch=text[i], next=text[i+1];
-    if(ch === '"' && quoted && next === '"'){cell+='"';i++;continue}
-    if(ch === '"'){quoted=!quoted;continue}
-    if(ch === ',' && !quoted){row.push(cell);cell="";continue}
-    if((ch === '\n' || ch === '\r') && !quoted){
-      if(ch === '\r' && next === '\n') i++;
-      row.push(cell);cell="";
-      if(row.some(v=>v!=="")) out.push(row);
-      row=[];continue
+function parseCSV(text) {
+  const out = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (ch === '"' && quoted && next === '"') {
+      cell += '"';
+      i++;
+      continue;
     }
-    cell+=ch;
+
+    if (ch === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (ch === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+
+    if ((ch === "\n" || ch === "\r") && !quoted) {
+      if (ch === "\r" && next === "\n") {
+        i++;
+      }
+
+      row.push(cell);
+      cell = "";
+
+      if (row.some(v => v !== "")) {
+        out.push(row);
+      }
+
+      row = [];
+      continue;
+    }
+
+    cell += ch;
   }
-  if(cell!=="" || row.length){row.push(cell);out.push(row)}
- const headers = out.shift().map(x =>
-  x.trim().replace(/^\uFEFF/, "")
-);
+
+  if (cell !== "" || row.length) {
+    row.push(cell);
+    out.push(row);
+  }
+
+  if (!out.length) {
+    return [];
+  }
+
+  const headers = out.shift().map(x =>
+    x.trim().replace(/^\uFEFF/, "")
+  );
+
+  return out.map(values => {
+    const obj = {};
+
+    headers.forEach((header, index) => {
+      obj[header] = (values[index] ?? "").trim();
+    });
+
+    return obj;
+  });
 }
 
 async function init(){
