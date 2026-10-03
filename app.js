@@ -493,15 +493,6 @@ async function fetchCsvText(url) {
         throw new Error("File CSV kosong.");
     }
 
-}
-};
-
-    if (!response.ok) {
-        throw new Error(
-            `HTTP ${response.status} ${response.statusText}`
-        );
-    }
-
     return text;
 }
 
