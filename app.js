@@ -475,12 +475,10 @@ function normalizeParsedRows(data) {
     });
 }
 
-async function fetchCsvText() {
-  const response = await fetch(url);
+async function fetchCsvText(url) {
+    console.log("FETCH CSV:", url);
 
-    console.log("FETCH CSV:", finalUrl);
-
-    const response = await fetch(finalUrl, {
+    const response = await fetch(url, {
         method: "GET",
         cache: "no-store"
     });
@@ -495,12 +493,6 @@ async function fetchCsvText() {
     }
 
     const text = await response.text();
-
-    console.log("UKURAN CSV:", text.length);
-    console.log(
-        "AWAL CSV:",
-        text.substring(0, 300)
-    );
 
     if (!text || !text.trim()) {
         throw new Error("File CSV kosong.");
