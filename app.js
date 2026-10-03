@@ -489,8 +489,6 @@ async function fetchCsvText(url) {
         );
     }
 
-    const text = await response.text();
-
     if (!text || !text.trim()) {
         throw new Error("File CSV kosong.");
     }
