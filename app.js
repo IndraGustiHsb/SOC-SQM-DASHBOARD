@@ -1,5 +1,5 @@
 const CSV_PATH='data/raw_data.csv';
-const TRAFFIC_DIVISOR=1e12, TRAFFIC_UNIT='TB';
+const TRAFFIC_DIVISOR=1, TRAFFIC_UNIT='TB';
 let rows=[], charts={}, activeMap='region';
 const specs=[
  {key:'traffic',title:'Total Traffic',unit:'TB',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>v.toFixed(3)},
@@ -46,3 +46,4 @@ function renderMap(){const term=(mapSearch.value||'').toLowerCase();let field=ac
 function download(){const blob=new Blob([Papa.unparse(filtered())],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sqm_filtered_data.csv';a.click();URL.revokeObjectURL(a.href)}
 function initNav(){document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const view=btn.dataset.view;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));document.getElementById(view+'View').classList.add('active-view');if(view==='map')renderMap();if(view==='data'){renderTable(rows,'dataBody','dataHead',1000);dataCount.textContent=rows.length.toLocaleString()+' records'}})}
 Papa.parse(CSV_PATH,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:res=>{rows=res.data.filter(r=>r['15 Minutes']).map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).sort((a,b)=>a.dt-b.dt);setupFilters();update();initNav();renderTable(rows,'dataBody','dataHead',1000);mapSearch.oninput=renderMap;document.querySelectorAll('.map-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.map-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');activeMap=b.dataset.map;renderMap()});downloadCsv.onclick=download;downloadCsv2.onclick=download;dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);}});
+
