@@ -1,48 +1,1610 @@
-const CSV_PATH='data/raw_data.csv';
-const TRAFFIC_DIVISOR=1e12, TRAFFIC_UNIT='TB';
-let rows=[], charts={}, activeMap='region';
-const specs=[
- {key:'traffic',title:'Total Traffic',unit:'TB',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>v.toFixed(3)},
- {key:'dlRetx',title:'DL TCP Retransmission',unit:'%',color:'#20E887',icon:'⟳',source:'Downlink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'ulRetx',title:'UL TCP Retransmission',unit:'%',color:'#FF9D00',icon:'◉',source:'Uplink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'tcp',title:'TCP Success Rate',unit:'%',color:'#A84CFF',icon:'⬡',source:'TCP Connection Success Rate (Included RST)(%)',format:v=>v.toFixed(2)+'%'},
- {key:'dlLoss',title:'DL Packet Loss',unit:'%',color:'#00BFFF',icon:'✥',source:'Downlink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'ulLoss',title:'UL Packet Loss',unit:'%',color:'#FF168C',icon:'✥',source:'Uplink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'e2e',title:'E2E Delay',unit:'ms',color:'#20E887',icon:'◷',source:'E2E Delay(ms)',format:v=>v.toFixed(0)+' ms'},
- {key:'synAck',title:'SYN ACK-ACK Delay',unit:'ms',color:'#A84CFF',icon:'✥',source:'SYN ACK-ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
- {key:'synSyn',title:'SYN-SYN ACK Delay',unit:'ms',color:'#00BFFF',icon:'✥',source:'SYN-SYN ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'}
+const CSV_PATH = "data/raw_data.csv";
+
+const TRAFFIC_DIVISOR = 1e12;
+const TRAFFIC_UNIT = "TB";
+
+let rows = [];
+let charts = {};
+let activeMap = "region";
+
+const $ = (id) => document.getElementById(id);
+
+const specs = [
+  {
+    key: "traffic",
+    title: "Total Traffic",
+    unit: "TB",
+    color: "#00BFFF",
+    icon: "◉",
+    source: "Total Traffic(Byte)",
+    format: (v) => `${v.toFixed(3)} TB`
+  },
+  {
+    key: "dlRetx",
+    title: "DL TCP Retransmission",
+    unit: "%",
+    color: "#20E887",
+    icon: "⟳",
+    source: "Downlink TCP Retransmission Rate(%)",
+    format: (v) => `${v.toFixed(2)}%`
+  },
+  {
+    key: "ulRetx",
+    title: "UL TCP Retransmission",
+    unit: "%",
+    color: "#FF9D00",
+    icon: "◉",
+    source: "Uplink TCP Retransmission Rate(%)",
+    format: (v) => `${v.toFixed(2)}%`
+  },
+  {
+    key: "tcp",
+    title: "TCP Success Rate",
+    unit: "%",
+    color: "#A84CFF",
+    icon: "⬡",
+    source: "TCP Connection Success Rate (Included RST)(%)",
+    format: (v) => `${v.toFixed(2)}%`
+  },
+  {
+    key: "dlLoss",
+    title: "DL Packet Loss",
+    unit: "%",
+    color: "#00BFFF",
+    icon: "✥",
+    source: "Downlink TCP Packet Loss Rate(%)",
+    format: (v) => `${v.toFixed(2)}%`
+  },
+  {
+    key: "ulLoss",
+    title: "UL Packet Loss",
+    unit: "%",
+    color: "#FF168C",
+    icon: "✥",
+    source: "Uplink TCP Packet Loss Rate(%)",
+    format: (v) => `${v.toFixed(2)}%`
+  },
+  {
+    key: "e2e",
+    title: "E2E Delay",
+    unit: "ms",
+    color: "#20E887",
+    icon: "◷",
+    source: "E2E Delay(ms)",
+    format: (v) => `${v.toFixed(0)} ms`
+  },
+  {
+    key: "synAck",
+    title: "SYN ACK-ACK Delay",
+    unit: "ms",
+    color: "#A84CFF",
+    icon: "✥",
+    source: "SYN ACK-ACK Delay(ms)",
+    format: (v) => `${v.toFixed(0)} ms`
+  },
+  {
+    key: "synSyn",
+    title: "SYN-SYN ACK Delay",
+    unit: "ms",
+    color: "#00BFFF",
+    icon: "✥",
+    source: "SYN-SYN ACK Delay(ms)",
+    format: (v) => `${v.toFixed(0)} ms`
+  }
 ];
-const metricKeys=specs.map(s=>s.source);
-const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
-function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function parseDate(s){const [d,t]=s.split(' '),[m,day,y]=d.split('/').map(Number);return new Date(y,m-1,day,...t.split(':').map(Number));}
-function isoDate(d){return d.toISOString().slice(0,10)}
-function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
-function metricValue(r,key){const v=Number(r[key]||0);return key==='Total Traffic(Byte)'?v/TRAFFIC_DIVISOR:v}
-function unique(field){return [...new Set(rows.map(r=>r[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
-function fillSelect(id,vals){const el=document.getElementById(id), old=el.value;el.innerHTML='<option value="ALL">All '+(id==='region'?'Region':id==='circle'?'Circle':id==='branch'?'Branch':'Kabupaten')+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(vals.includes(old))el.value=old}
-function setupFilters(){
- const min=rows[0].dt,max=rows[rows.length-1].dt; dateFrom.value=isoDate(min);dateTo.value=isoDate(max); region.innerHTML='<option value="ALL">All Region</option>'+unique('REGION').map(v=>`<option>${esc(v)}</option>`).join(''); refreshDependent();
- ['dateFrom','dateTo','period','region','circle','branch','kabupaten','compare','compareMode'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(['region','circle','branch'].includes(id))refreshDependent();update()})); reset.onclick=()=>{dateFrom.value=isoDate(min);dateTo.value=isoDate(max);period.value='15min';region.value=circle.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareMode.value='lastWeek';refreshDependent();update()};
+
+const metricKeys = specs.map((s) => s.source);
+
+function avg(arr) {
+  return arr.length
+    ? arr.reduce((a, b) => a + b, 0) / arr.length
+    : 0;
 }
-function refreshDependent(){
- const r=region.value,c=circle.value,b=branch.value;
- let f=rows.filter(x=>r==='ALL'||x.REGION===r);fillSelect('circle',uniqueFrom(f,'CIRCLE'));f=f.filter(x=>c==='ALL'||x.CIRCLE===c);fillSelect('branch',uniqueFrom(f,'BRANCH'));f=f.filter(x=>b==='ALL'||x.BRANCH===b);fillSelect('kabupaten',uniqueFrom(f,'KABUPATEN'));if(!['ALL',...uniqueFrom(f,'KABUPATEN')].includes(kabupaten.value))kabupaten.value='ALL';
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (m) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[m]));
 }
-function uniqueFrom(arr,field){return [...new Set(arr.map(x=>x[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
-function filtered(extraShiftDays=0){
- const from=new Date(dateFrom.value+'T00:00:00'),to=new Date(dateTo.value+'T23:59:59');from.setDate(from.getDate()+extraShiftDays);to.setDate(to.getDate()+extraShiftDays);
- return rows.filter(r=>r.dt>=from&&r.dt<=to&&(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value));
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function parseDate(value) {
+  if (!value) return null;
+
+  const text = String(value).trim();
+
+  // Format CSV: 10/1/2026 0:00
+  const match = text.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+  );
+
+  if (match) {
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    const year = Number(match[3]);
+    const hour = Number(match[4]);
+    const minute = Number(match[5]);
+    const second = Number(match[6] || 0);
+
+    return new Date(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      second
+    );
+  }
+
+  const fallback = new Date(text);
+
+  return Number.isNaN(fallback.getTime())
+    ? null
+    : fallback;
 }
-function bucket(r){const p=period.value;if(p==='daily')return isoDate(r.dt);if(p==='hourly'){const d=new Date(r.dt);d.setMinutes(0,0,0);return d.toISOString()}return r.dt.toISOString()}
-function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>x[key]/=x.n);return x})}
-function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
-function drawChart(spec,cur,cmp){const ctx=document.getElementById('ch_'+spec.key).getContext('2d');if(charts[spec.key])charts[spec.key].destroy();const labels=cur.map(x=>new Date(x.k).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+(period.value==='15min'?' '+new Date(x.k).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''));const datasets=[{label:'Current',data:cur.map(x=>x[spec.source]),borderColor:spec.color,backgroundColor:rgba(spec.color,.12),borderWidth:2,pointRadius:0,tension:.3,fill:true}];if(compare.checked&&cmp.length){datasets.push({label:compareMode.value==='lastWeek'?'Compare (Last Week)':'Compare (Previous Period)',data:cmp.map(x=>x[spec.source]),borderColor:spec.color,borderWidth:1.5,borderDash:[6,4],pointRadius:0,tension:.3,fill:false})}charts[spec.key]=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#74a6ca',maxTicksLimit:8},grid:{color:'rgba(24,85,122,.25)'}},y:{ticks:{color:'#74a6ca',maxTicksLimit:5},grid:{color:'rgba(24,85,122,.25)'}}}}});}
-function renderCharts(cur,cmp){const box=document.getElementById('charts');box.innerHTML=specs.map(s=>`<div class="chart-card"><div class="chart-head"><h3>${s.title} (${s.unit})</h3><div class="legend"><b style="color:${s.color}">━━ Current</b>${compare.checked&&cmp.length?` <b style="color:${s.color}">┄┄ Compare</b>`:''}</div></div><canvas id="ch_${s.key}"></canvas></div>`).join('');specs.forEach(s=>drawChart(s,cur,cmp))}
-function updateKpis(cur,cmp){const c=cur.length?cur[cur.length-1]:null,prev=cmp.length?cmp[cmp.length-1]:null;document.getElementById('kpis').innerHTML=specs.slice(0,8).map((s,i)=>{const val=c?c[s.source]:0,old=prev?prev[s.source]:null;let delta='';if(old!==null&&old!==0){const d=val-old,p=(d/Math.abs(old))*100;delta=`<div class="delta">${d>=0?'▲':'▼'} ${Math.abs(p).toFixed(2)}%</div><div class="vs">vs ${s.format(old)} (Compare)</div>`}else delta='<div class="delta">● Live</div><div class="vs">Current filtered period</div>';return `<div class="kpi ${['green','orange','purple','pink'][i%4]}"><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}</div>`}).join('')}
-function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)','TOTAL TRAFFIC (TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td><td>${esc(r.REGION)}</td><td>${esc(r.CIRCLE)}</td><td>${esc(r.BRANCH)}</td><td>${esc(r.KABUPATEN)}</td><td class="num">${(Number(r['Total Traffic(Byte)'])/TRAFFIC_DIVISOR).toFixed(6)}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
-function update(){const cur=aggregate(filtered()),cmp=compare.checked?aggregate(filtered(compareMode.value==='lastWeek'?-7:-Math.max(1,Math.ceil((new Date(dateTo.value)-new Date(dateFrom.value))/86400000+1)))):[];updateKpis(cur,cmp);renderCharts(cur,cmp);renderTable(filtered());}
-function renderMap(){const term=(mapSearch.value||'').toLowerCase();let field=activeMap==='region'?'REGION':activeMap==='circle'?'CIRCLE':activeMap==='branch'?'BRANCH':'KABUPATEN';const vals=unique(field).filter(v=>String(v).toLowerCase().includes(term)).slice(0,40);mapList.innerHTML=vals.map(v=>{const n=rows.filter(r=>r[field]===v).length;return `<div class="map-item"><b>${esc(v)}</b><span>${n.toLocaleString()}</span></div>`}).join('');const regs=unique('REGION').slice(0,12);regionPerformance.innerHTML=regs.map(v=>{const a=rows.filter(r=>r.REGION===v);const perf=avg(a.map(r=>Number(r['TCP Connection Success Rate (Included RST)(%)'])));return `<div class="perf"><span>${esc(v)}</span><b>${perf.toFixed(1)}%</b><div class="bar"><i style="width:${Math.min(100,perf)}%"></i></div></div>`}).join('');const reg=regs.slice(0,8);topologyCanvas.innerHTML=reg.map((v,i)=>`<div class="node" style="left:${8+(i%4)*24}%;top:${18+Math.floor(i/4)*42}%"><span class="dot"></span><strong>${esc(v)}</strong><small>${rows.filter(r=>r.REGION===v).length.toLocaleString()} records</small></div>`).join('');}
-function download(){const blob=new Blob([Papa.unparse(filtered())],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sqm_filtered_data.csv';a.click();URL.revokeObjectURL(a.href)}
-function initNav(){document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const view=btn.dataset.view;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));document.getElementById(view+'View').classList.add('active-view');if(view==='map')renderMap();if(view==='data'){renderTable(rows,'dataBody','dataHead',1000);dataCount.textContent=rows.length.toLocaleString()+' records'}})}
-Papa.parse(CSV_PATH,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:res=>{rows=res.data.filter(r=>r['15 Minutes']).map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).sort((a,b)=>a.dt-b.dt);setupFilters();update();initNav();renderTable(rows,'dataBody','dataHead',1000);mapSearch.oninput=renderMap;document.querySelectorAll('.map-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.map-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');activeMap=b.dataset.map;renderMap()});downloadCsv.onclick=download;downloadCsv2.onclick=download;dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);}});
+
+function localISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+/* =========================================================
+   METRIC
+========================================================= */
+
+function metricValue(row, key) {
+  const value = Number(row[key]);
+
+  if (!Number.isFinite(value)) return 0;
+
+  if (key === "Total Traffic(Byte)") {
+    return value / TRAFFIC_DIVISOR;
+  }
+
+  return value;
+}
+
+/* =========================================================
+   FILTER
+========================================================= */
+
+function unique(field) {
+  return [
+    ...new Set(
+      rows
+        .map((r) => r[field])
+        .filter((v) => v !== undefined && v !== null && v !== "")
+    )
+  ].sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
+}
+
+function uniqueFrom(data, field) {
+  return [
+    ...new Set(
+      data
+        .map((r) => r[field])
+        .filter((v) => v !== undefined && v !== null && v !== "")
+    )
+  ].sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
+}
+
+function fillSelect(id, values, label) {
+  const element = $(id);
+  if (!element) return;
+
+  const oldValue = element.value;
+
+  element.innerHTML =
+    `<option value="ALL">All ${label}</option>` +
+    values
+      .map(
+        (v) =>
+          `<option value="${esc(v)}">${esc(v)}</option>`
+      )
+      .join("");
+
+  if (values.includes(oldValue)) {
+    element.value = oldValue;
+  }
+}
+
+function setupFilters() {
+  if (!rows.length) return;
+
+  const dateFrom = $("dateFrom");
+  const dateTo = $("dateTo");
+  const period = $("period");
+  const region = $("region");
+  const circle = $("circle");
+  const branch = $("branch");
+  const kabupaten = $("kabupaten");
+  const compare = $("compare");
+  const compareMode = $("compareMode");
+  const reset = $("reset");
+
+  const minDate = rows[0].dt;
+  const maxDate = rows[rows.length - 1].dt;
+
+  dateFrom.value = localISODate(minDate);
+  dateTo.value = localISODate(maxDate);
+
+  fillSelect("region", unique("REGION"), "Region");
+
+  refreshDependentFilters();
+
+  [
+    dateFrom,
+    dateTo,
+    period,
+    region,
+    circle,
+    branch,
+    kabupaten,
+    compare,
+    compareMode
+  ].forEach((element) => {
+    if (!element) return;
+
+    element.addEventListener("change", () => {
+      if (
+        ["region", "circle", "branch"].includes(element.id)
+      ) {
+        refreshDependentFilters();
+      }
+
+      updateDashboard();
+    });
+  });
+
+  reset.addEventListener("click", () => {
+    dateFrom.value = localISODate(minDate);
+    dateTo.value = localISODate(maxDate);
+
+    period.value = "15min";
+
+    region.value = "ALL";
+    circle.value = "ALL";
+    branch.value = "ALL";
+    kabupaten.value = "ALL";
+
+    compare.checked = false;
+    compareMode.value = "lastWeek";
+
+    refreshDependentFilters();
+    updateDashboard();
+  });
+}
+
+function refreshDependentFilters() {
+  const region = $("region");
+  const circle = $("circle");
+  const branch = $("branch");
+  const kabupaten = $("kabupaten");
+
+  if (!region || !circle || !branch || !kabupaten) return;
+
+  const selectedRegion = region.value;
+  const selectedCircle = circle.value;
+  const selectedBranch = branch.value;
+
+  let filtered = rows.filter(
+    (r) =>
+      selectedRegion === "ALL" ||
+      r.REGION === selectedRegion
+  );
+
+  fillSelect(
+    "circle",
+    uniqueFrom(filtered, "CIRCLE"),
+    "Circle"
+  );
+
+  filtered = filtered.filter(
+    (r) =>
+      selectedCircle === "ALL" ||
+      r.CIRCLE === selectedCircle
+  );
+
+  fillSelect(
+    "branch",
+    uniqueFrom(filtered, "BRANCH"),
+    "Branch"
+  );
+
+  filtered = filtered.filter(
+    (r) =>
+      selectedBranch === "ALL" ||
+      r.BRANCH === selectedBranch
+  );
+
+  fillSelect(
+    "kabupaten",
+    uniqueFrom(filtered, "KABUPATEN"),
+    "Kabupaten"
+  );
+
+  if (
+    ![
+      "ALL",
+      ...uniqueFrom(filtered, "KABUPATEN")
+    ].includes(kabupaten.value)
+  ) {
+    kabupaten.value = "ALL";
+  }
+}
+
+/* =========================================================
+   FILTER DATA
+========================================================= */
+
+function getDateRange(shiftDays = 0) {
+  const fromInput = $("dateFrom");
+  const toInput = $("dateTo");
+
+  const from = new Date(
+    `${fromInput.value}T00:00:00`
+  );
+
+  const to = new Date(
+    `${toInput.value}T23:59:59`
+  );
+
+  from.setDate(from.getDate() + shiftDays);
+  to.setDate(to.getDate() + shiftDays);
+
+  return { from, to };
+}
+
+function filteredData(shiftDays = 0) {
+  const range = getDateRange(shiftDays);
+
+  const region = $("region").value;
+  const circle = $("circle").value;
+  const branch = $("branch").value;
+  const kabupaten = $("kabupaten").value;
+
+  return rows.filter((r) => {
+    return (
+      r.dt >= range.from &&
+      r.dt <= range.to &&
+      (region === "ALL" || r.REGION === region) &&
+      (circle === "ALL" || r.CIRCLE === circle) &&
+      (branch === "ALL" || r.BRANCH === branch) &&
+      (kabupaten === "ALL" || r.KABUPATEN === kabupaten)
+    );
+  });
+}
+
+/* =========================================================
+   AGGREGATION
+========================================================= */
+
+function bucketKey(row) {
+  const period = $("period").value;
+
+  const date = new Date(row.dt);
+
+  if (period === "daily") {
+    date.setHours(0, 0, 0, 0);
+  }
+
+  if (period === "hourly") {
+    date.setMinutes(0, 0, 0);
+  }
+
+  return date.getTime();
+}
+
+function aggregate(data) {
+  const map = new Map();
+
+  data.forEach((row) => {
+    const key = bucketKey(row);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        k: key,
+        n: 0
+      });
+
+      metricKeys.forEach((metric) => {
+        map.get(key)[metric] = 0;
+      });
+    }
+
+    const item = map.get(key);
+
+    item.n++;
+
+    metricKeys.forEach((metric) => {
+      item[metric] += metricValue(
+        row,
+        metric
+      );
+    });
+  });
+
+  return [...map.values()]
+    .sort((a, b) => a.k - b.k)
+    .map((item) => {
+      metricKeys.forEach((metric) => {
+        item[metric] =
+          item[metric] / item.n;
+      });
+
+      return item;
+    });
+}
+
+/* =========================================================
+   CHART
+========================================================= */
+
+function rgba(hex, alpha) {
+  const value = parseInt(
+    hex.substring(1),
+    16
+  );
+
+  const r = value >> 16;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function chartLabels(data) {
+  const period = $("period").value;
+
+  return data.map((item) => {
+    const date = new Date(item.k);
+
+    if (period === "daily") {
+      return date.toLocaleDateString(
+        "en-GB",
+        {
+          day: "2-digit",
+          month: "short"
+        }
+      );
+    }
+
+    if (period === "hourly") {
+      return (
+        date.toLocaleDateString(
+          "en-GB",
+          {
+            day: "2-digit",
+            month: "short"
+          }
+        ) +
+        " " +
+        date.toLocaleTimeString(
+          "en-GB",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        )
+      );
+    }
+
+    return (
+      date.toLocaleDateString(
+        "en-GB",
+        {
+          day: "2-digit",
+          month: "short"
+        }
+      ) +
+      " " +
+      date.toLocaleTimeString(
+        "en-GB",
+        {
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      )
+    );
+  });
+}
+
+function drawChart(spec, current, comparison) {
+  const canvas = $(`ch_${spec.key}`);
+
+  if (!canvas) return;
+
+  if (charts[spec.key]) {
+    charts[spec.key].destroy();
+  }
+
+  const datasets = [
+    {
+      label: "Current",
+      data: current.map(
+        (x) => x[spec.source]
+      ),
+      borderColor: spec.color,
+      backgroundColor: rgba(
+        spec.color,
+        0.12
+      ),
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: true
+    }
+  ];
+
+  const compare =
+    $("compare").checked;
+
+  if (
+    compare &&
+    comparison.length
+  ) {
+    datasets.push({
+      label:
+        $("compareMode").value ===
+        "lastWeek"
+          ? "Compare (Last Week)"
+          : "Compare (Previous Period)",
+      data: comparison.map(
+        (x) => x[spec.source]
+      ),
+      borderColor: spec.color,
+      borderWidth: 1.5,
+      borderDash: [6, 4],
+      pointRadius: 0,
+      tension: 0.3,
+      fill: false
+    });
+  }
+
+  charts[spec.key] =
+    new Chart(canvas, {
+      type: "line",
+
+      data: {
+        labels: chartLabels(current),
+        datasets
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+
+        scales: {
+          x: {
+            ticks: {
+              color: "#74a6ca",
+              maxTicksLimit: 8
+            },
+            grid: {
+              color:
+                "rgba(24,85,122,.25)"
+            }
+          },
+
+          y: {
+            ticks: {
+              color: "#74a6ca",
+              maxTicksLimit: 5
+            },
+            grid: {
+              color:
+                "rgba(24,85,122,.25)"
+            }
+          }
+        }
+      }
+    });
+}
+
+function renderCharts(current, comparison) {
+  const chartsBox = $("charts");
+
+  if (!chartsBox) return;
+
+  chartsBox.innerHTML = specs
+    .map(
+      (spec) => `
+        <div class="chart-card">
+
+          <div class="chart-head">
+
+            <h3>
+              ${esc(spec.title)}
+              (${esc(spec.unit)})
+            </h3>
+
+            <div class="legend">
+
+              <b style="color:${spec.color}">
+                ━━ Current
+              </b>
+
+              ${
+                $("compare").checked &&
+                comparison.length
+                  ? `
+                    <b style="color:${spec.color}">
+                      ┄┄ Compare
+                    </b>
+                  `
+                  : ""
+              }
+
+            </div>
+
+          </div>
+
+          <canvas id="ch_${spec.key}"></canvas>
+
+        </div>
+      `
+    )
+    .join("");
+
+  specs.forEach((spec) => {
+    drawChart(
+      spec,
+      current,
+      comparison
+    );
+  });
+}
+
+/* =========================================================
+   KPI
+========================================================= */
+
+function renderKpis(current, comparison) {
+  const box = $("kpis");
+
+  if (!box) return;
+
+  const currentLast =
+    current.length
+      ? current[current.length - 1]
+      : null;
+
+  const comparisonLast =
+    comparison.length
+      ? comparison[comparison.length - 1]
+      : null;
+
+  box.innerHTML = specs
+    .map((spec, index) => {
+      const value = currentLast
+        ? currentLast[spec.source]
+        : 0;
+
+      const oldValue =
+        comparisonLast
+          ? comparisonLast[
+              spec.source
+            ]
+          : null;
+
+      let deltaHtml = `
+        <div class="delta">
+          ● Live
+        </div>
+
+        <div class="vs">
+          Current filtered period
+        </div>
+      `;
+
+      if (
+        oldValue !== null &&
+        oldValue !== undefined &&
+        oldValue !== 0
+      ) {
+        const difference =
+          value - oldValue;
+
+        const percentage =
+          (difference /
+            Math.abs(oldValue)) *
+          100;
+
+        deltaHtml = `
+          <div class="delta">
+            ${
+              difference >= 0
+                ? "▲"
+                : "▼"
+            }
+            ${Math.abs(
+              percentage
+            ).toFixed(2)}%
+          </div>
+
+          <div class="vs">
+            vs ${spec.format(
+              oldValue
+            )}
+            ${
+              $("compareMode").value ===
+              "lastWeek"
+                ? "(Last Week)"
+                : "(Previous Period)"
+            }
+          </div>
+        `;
+      }
+
+      const colors = [
+        "green",
+        "orange",
+        "purple",
+        "pink"
+      ];
+
+      return `
+        <div class="kpi ${colors[index % 4]}">
+
+          <div class="icon">
+            ${spec.icon}
+          </div>
+
+          <h3>
+            ${esc(spec.title)}
+          </h3>
+
+          <span class="unit">
+            ${esc(spec.unit)}
+          </span>
+
+          <div class="value">
+            ${spec.format(value)}
+          </div>
+
+          ${deltaHtml}
+
+        </div>
+      `;
+    })
+    .join("");
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+const tableColumns = [
+  "15 Minutes",
+  "REGION",
+  "CIRCLE",
+  "BRANCH",
+  "KABUPATEN",
+  "Total Traffic(Byte)",
+  "Downlink TCP Retransmission Rate(%)",
+  "Uplink TCP Retransmission Rate(%)",
+  "TCP Connection Success Rate (Included RST)(%)",
+  "Downlink TCP Packet Loss Rate(%)",
+  "Uplink TCP Packet Loss Rate(%)",
+  "E2E Delay(ms)",
+  "SYN ACK-ACK Delay(ms)",
+  "SYN-SYN ACK Delay(ms)"
+];
+
+const tableHeaders = [
+  "DATE / TIME",
+  "REGION",
+  "CIRCLE",
+  "BRANCH",
+  "KABUPATEN",
+  "TOTAL TRAFFIC (TB)",
+  "DL RETX (%)",
+  "UL RETX (%)",
+  "TCP SUCCESS (%)",
+  "DL LOSS (%)",
+  "UL LOSS (%)",
+  "E2E (ms)",
+  "SYN ACK-ACK (ms)",
+  "SYN-SYN ACK (ms)"
+];
+
+function renderTable(
+  data,
+  bodyId = "tableBody",
+  headId = "tableHead",
+  limit = 500
+) {
+  const head = $(headId);
+  const body = $(bodyId);
+
+  if (!head || !body) return;
+
+  head.innerHTML =
+    "<tr>" +
+    tableHeaders
+      .map(
+        (header) =>
+          `<th>${header}</th>`
+      )
+      .join("") +
+    "</tr>";
+
+  const output = [...data]
+    .sort(
+      (a, b) => b.dt - a.dt
+    )
+    .slice(0, limit);
+
+  body.innerHTML = output
+    .map(
+      (row) => `
+        <tr>
+
+          <td>
+            ${esc(row["15 Minutes"])}
+          </td>
+
+          <td>
+            ${esc(row.REGION)}
+          </td>
+
+          <td>
+            ${esc(row.CIRCLE)}
+          </td>
+
+          <td>
+            ${esc(row.BRANCH)}
+          </td>
+
+          <td>
+            ${esc(row.KABUPATEN)}
+          </td>
+
+          <td class="num">
+            ${
+              Number(
+                row["Total Traffic(Byte)"]
+              ) /
+              TRAFFIC_DIVISOR
+            .toFixed(6)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row[
+                "Downlink TCP Retransmission Rate(%)"
+              ] || 0
+            ).toFixed(2)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row[
+                "Uplink TCP Retransmission Rate(%)"
+              ] || 0
+            ).toFixed(2)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row[
+                "TCP Connection Success Rate (Included RST)(%)"
+              ] || 0
+            ).toFixed(2)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row[
+                "Downlink TCP Packet Loss Rate(%)"
+              ] || 0
+            ).toFixed(2)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row[
+                "Uplink TCP Packet Loss Rate(%)"
+              ] || 0
+            ).toFixed(2)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row["E2E Delay(ms)"] || 0
+            ).toFixed(0)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row["SYN ACK-ACK Delay(ms)"] || 0
+            ).toFixed(0)}
+          </td>
+
+          <td class="num">
+            ${Number(
+              row["SYN-SYN ACK Delay(ms)"] || 0
+            ).toFixed(0)}
+          </td>
+
+        </tr>
+      `
+    )
+    .join("");
+
+  return output;
+}
+
+/* =========================================================
+   MAIN UPDATE
+========================================================= */
+
+function updateDashboard() {
+  if (!rows.length) return;
+
+  const currentData =
+    filteredData();
+
+  const current =
+    aggregate(currentData);
+
+  let comparison = [];
+
+  if ($("compare").checked) {
+    let shift = -7;
+
+    if (
+      $("compareMode").value ===
+      "previous"
+    ) {
+      const from = new Date(
+        $("dateFrom").value
+      );
+
+      const to = new Date(
+        $("dateTo").value
+      );
+
+      const days =
+        Math.max(
+          1,
+          Math.round(
+            (to - from) /
+              86400000
+          ) + 1
+        );
+
+      shift = -days;
+    }
+
+    comparison =
+      aggregate(
+        filteredData(shift)
+      );
+  }
+
+  renderKpis(
+    current,
+    comparison
+  );
+
+  renderCharts(
+    current,
+    comparison
+  );
+
+  renderTable(
+    currentData,
+    "tableBody",
+    "tableHead",
+    500
+  );
+}
+
+/* =========================================================
+   MAP
+========================================================= */
+
+function renderMap() {
+  const mapList = $("mapList");
+  const regionPerformance =
+    $("regionPerformance");
+  const topology =
+    $("topologyCanvas");
+
+  if (!mapList) return;
+
+  const search =
+    (
+      $("mapSearch")?.value ||
+      ""
+    ).toLowerCase();
+
+  const field =
+    activeMap === "region"
+      ? "REGION"
+      : activeMap === "circle"
+      ? "CIRCLE"
+      : activeMap === "branch"
+      ? "BRANCH"
+      : "KABUPATEN";
+
+  const values =
+    unique(field)
+      .filter((v) =>
+        String(v)
+          .toLowerCase()
+          .includes(search)
+      )
+      .slice(0, 40);
+
+  mapList.innerHTML =
+    values
+      .map((value) => {
+        const count =
+          rows.filter(
+            (r) =>
+              r[field] === value
+          ).length;
+
+        return `
+          <div class="map-item">
+
+            <b>
+              ${esc(value)}
+            </b>
+
+            <span>
+              ${count.toLocaleString()}
+            </span>
+
+          </div>
+        `;
+      })
+      .join("");
+
+  const regions =
+    unique("REGION")
+      .slice(0, 12);
+
+  if (regionPerformance) {
+    regionPerformance.innerHTML =
+      regions
+        .map((region) => {
+          const data =
+            rows.filter(
+              (r) =>
+                r.REGION ===
+                region
+            );
+
+          const performance =
+            avg(
+              data.map(
+                (r) =>
+                  Number(
+                    r[
+                      "TCP Connection Success Rate (Included RST)(%)"
+                    ]
+                  ) || 0
+              )
+            );
+
+          return `
+            <div class="perf">
+
+              <span>
+                ${esc(region)}
+              </span>
+
+              <b>
+                ${performance.toFixed(
+                  1
+                )}%
+              </b>
+
+              <div class="bar">
+                <i style="width:${Math.min(
+                  100,
+                  performance
+                )}%"></i>
+              </div>
+
+            </div>
+          `;
+        })
+        .join("");
+  }
+
+  if (topology) {
+    topology.innerHTML =
+      regions
+        .slice(0, 8)
+        .map(
+          (region, index) => `
+            <div
+              class="node"
+              style="
+                left:${8 +
+                  (index % 4) *
+                    24}%;
+                top:${18 +
+                  Math.floor(
+                    index / 4
+                  ) *
+                    42}%;
+              "
+            >
+
+              <span class="dot"></span>
+
+              <strong>
+                ${esc(region)}
+              </strong>
+
+              <small>
+                ${
+                  rows.filter(
+                    (r) =>
+                      r.REGION ===
+                      region
+                  ).length
+                } records
+              </small>
+
+            </div>
+          `
+        )
+        .join("");
+  }
+}
+
+/* =========================================================
+   DOWNLOAD
+========================================================= */
+
+function downloadCSV() {
+  const data =
+    filteredData();
+
+  const csv =
+    Papa.unparse(data);
+
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type: "text/csv;charset=utf-8;"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const link =
+    document.createElement("a");
+
+  link.href = url;
+  link.download =
+    "sqm_filtered_data.csv";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function initNavigation() {
+  document
+    .querySelectorAll(".nav-btn")
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          document
+            .querySelectorAll(
+              ".nav-btn"
+            )
+            .forEach((item) =>
+              item.classList.remove(
+                "active"
+              )
+            );
+
+          button.classList.add(
+            "active"
+          );
+
+          const viewName =
+            button.dataset.view;
+
+          document
+            .querySelectorAll(
+              ".view"
+            )
+            .forEach((view) =>
+              view.classList.remove(
+                "active-view"
+              )
+            );
+
+          const target =
+            $(
+              `${viewName}View`
+            );
+
+          if (target) {
+            target.classList.add(
+              "active-view"
+            );
+          }
+
+          if (
+            viewName === "map"
+          ) {
+            renderMap();
+          }
+
+          if (
+            viewName === "data"
+          ) {
+            renderTable(
+              rows,
+              "dataBody",
+              "dataHead",
+              1000
+            );
+
+            if ($("dataCount")) {
+              $("dataCount").textContent =
+                `${rows.length.toLocaleString()} records`;
+            }
+          }
+
+          if (
+            viewName ===
+            "dashboard"
+          ) {
+            updateDashboard();
+          }
+        }
+      );
+    });
+}
+
+/* =========================================================
+   CLOCK
+========================================================= */
+
+function initClock() {
+  const clock =
+    $("clock");
+
+  if (!clock) return;
+
+  const updateClock = () => {
+    clock.textContent =
+      new Date().toLocaleTimeString(
+        "en-GB",
+        {
+          hour12: false
+        }
+      );
+  };
+
+  updateClock();
+
+  setInterval(
+    updateClock,
+    1000
+  );
+}
+
+/* =========================================================
+   ERROR DISPLAY
+========================================================= */
+
+function showError(message) {
+  const charts =
+    $("charts");
+
+  const kpis =
+    $("kpis");
+
+  if (kpis) {
+    kpis.innerHTML = `
+      <div
+        class="panel"
+        style="
+          grid-column:1/-1;
+          padding:25px;
+          color:#ff476f;
+        "
+      >
+        <strong>
+          ⚠ DATA SOURCE ERROR
+        </strong>
+
+        <div style="
+          margin-top:8px;
+          color:#9fc9e5;
+        ">
+          ${esc(message)}
+        </div>
+      </div>
+    `;
+  }
+
+  if (charts) {
+    charts.innerHTML = "";
+  }
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+
+function init() {
+  initClock();
+  initNavigation();
+
+  if (
+    typeof Papa ===
+    "undefined"
+  ) {
+    showError(
+      "PapaParse tidak berhasil dimuat."
+    );
+    return;
+  }
+
+  if (
+    typeof Chart ===
+    "undefined"
+  ) {
+    showError(
+      "Chart.js tidak berhasil dimuat."
+    );
+    return;
+  }
+
+  Papa.parse(
+    CSV_PATH,
+    {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+
+      complete: function (result) {
+        try {
+          if (
+            !result.data ||
+            !result.data.length
+          ) {
+            throw new Error(
+              "CSV kosong atau tidak memiliki data."
+            );
+          }
+
+          rows =
+            result.data
+              .filter(
+                (row) =>
+                  row["15 Minutes"]
+              )
+              .map((row) => {
+                const dt =
+                  parseDate(
+                    row["15 Minutes"]
+                  );
+
+                return {
+                  ...row,
+                  dt
+                };
+              })
+              .filter(
+                (row) =>
+                  row.dt &&
+                  !Number.isNaN(
+                    row.dt.getTime()
+                  )
+              )
+              .sort(
+                (a, b) =>
+                  a.dt - b.dt
+              );
+
+          if (!rows.length) {
+            throw new Error(
+              "Tidak ada tanggal valid pada kolom 15 Minutes."
+            );
+          }
+
+          console.log(
+            "CSV berhasil di-load"
+          );
+
+          console.log(
+            "Jumlah rows:",
+            rows.length
+          );
+
+          setupFilters();
+
+          updateDashboard();
+
+          renderTable(
+            rows,
+            "dataBody",
+            "dataHead",
+            1000
+          );
+
+          const mapSearch =
+            $("mapSearch");
+
+          if (mapSearch) {
+            mapSearch.addEventListener(
+              "input",
+              renderMap
+            );
+          }
+
+          document
+            .querySelectorAll(
+              ".map-tab"
+            )
+            .forEach((button) => {
+              button.addEventListener(
+                "click",
+                () => {
+                  document
+                    .querySelectorAll(
+                      ".map-tab"
+                    )
+                    .forEach(
+                      (item) =>
+                        item.classList.remove(
+                          "active"
+                        )
+                    );
+
+                  button.classList.add(
+                    "active"
+                  );
+
+                  activeMap =
+                    button.dataset.map;
+
+                  renderMap();
+                }
+              );
+            });
+
+          if ($("downloadCsv")) {
+            $("downloadCsv")
+              .addEventListener(
+                "click",
+                downloadCSV
+              );
+          }
+
+          if ($("downloadCsv2")) {
+            $("downloadCsv2")
+              .addEventListener(
+                "click",
+                downloadCSV
+              );
+          }
+
+          if ($("dataSearch")) {
+            $("dataSearch")
+              .addEventListener(
+                "input",
+                () => {
+                  const query =
+                    $("dataSearch")
+                      .value
+                      .toLowerCase();
+
+                  const filtered =
+                    rows.filter(
+                      (row) =>
+                        Object.values(
+                          row
+                        ).some(
+                          (value) =>
+                            String(
+                              value
+                            )
+                              .toLowerCase()
+                              .includes(
+                                query
+                              )
+                        )
+                    );
+
+                  renderTable(
+                    filtered,
+                    "dataBody",
+                    "dataHead",
+                    1000
+                  );
+                }
+              );
+          }
+
+          console.log(
+            "Dashboard berhasil diinisialisasi."
+          );
+        } catch (error) {
+          console.error(
+            "ERROR DASHBOARD:",
+            error
+          );
+
+          showError(
+            error.message
+          );
+        }
+      },
+
+      error: function (error) {
+        console.error(
+          "CSV LOAD ERROR:",
+          error
+        );
+
+        showError(
+          `Tidak dapat membaca ${CSV_PATH}. Periksa bahwa file berada di folder data/.`
+        );
+      }
+    }
+  );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  init
+);
