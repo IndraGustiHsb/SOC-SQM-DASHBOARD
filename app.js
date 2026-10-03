@@ -477,28 +477,30 @@ function normalizeParsedRows(data) {
 }
 
 async function fetchCsvText(url) {
-    const response = await fetch(
-        url + (url.includes("?") ? "&" : "?") + "_=" + Date.now(),
-        {
-            method: "GET",
-            cache: "no-store",
-            headers: {
-                "Cache-Control": "no-cache"
-            }
-        }
-    );
+    const requestUrl =
+        url + (url.includes("?") ? "&" : "?") + "_=" + Date.now();
 
-    const text = await response.text();
+    /*
+     * Jangan kirim header Cache-Control kustom. Header itu membuat browser
+     * melakukan CORS preflight ke raw.githubusercontent.com, yang dapat
+     * ditolak. Opsi cache no-store di Fetch API sudah cukup untuk bypass cache.
+     */
+    const response = await fetch(requestUrl, {
+        method: "GET",
+        cache: "no-store"
+    });
 
     console.log("CSV HTTP status:", response.status);
-    console.log("CSV URL:", url);
-    console.log("Ukuran CSV:", text.length);
+    console.log("CSV URL:", response.url);
 
     if (!response.ok) {
         throw new Error(
             `HTTP ${response.status} ${response.statusText}`
         );
     }
+
+    const text = await response.text();
+    console.log("Ukuran CSV:", text.length);
 
     return text;
 }
