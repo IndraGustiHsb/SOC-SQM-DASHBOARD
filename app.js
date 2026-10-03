@@ -476,8 +476,6 @@ function normalizeParsedRows(data) {
 }
 
 async function fetchCsvText(url) {
-    console.log("FETCH CSV:", url);
-
     const response = await fetch(url, {
         method: "GET",
         cache: "no-store"
@@ -485,15 +483,18 @@ async function fetchCsvText(url) {
 
     if (!response.ok) {
         throw new Error(
-            `CSV gagal diakses: HTTP ${response.status} ${response.statusText}`
+            `HTTP ${response.status} ${response.statusText}`
         );
     }
+
+    const text = await response.text();
 
     if (!text || !text.trim()) {
         throw new Error("File CSV kosong.");
     }
 
     return text;
+}
 };
 
     if (!response.ok) {
