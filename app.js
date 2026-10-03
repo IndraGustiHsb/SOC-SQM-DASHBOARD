@@ -1,7 +1,7 @@
 const CSV_PATH = "data/raw_data.csv";
 
-const TRAFFIC_DIVISOR = 1e12;
-const TRAFFIC_UNIT = "TB";
+const TRAFFIC_DIVISOR = 1e9;
+const TRAFFIC_UNIT = "GB";
 
 let rows = [];
 let charts = {};
@@ -10,15 +10,15 @@ let activeMap = "region";
 const $ = (id) => document.getElementById(id);
 
 const specs = [
-  {
-    key: "traffic",
-    title: "Total Traffic",
-    unit: "TB",
-    color: "#00BFFF",
-    icon: "◉",
-    source: "Total Traffic(Byte)",
-    format: (v) => `${v.toFixed(3)} TB`
-  },
+ {
+  key: "traffic",
+  title: "Total Traffic",
+  unit: "GB",
+  color: "#00BFFF",
+  icon: "◉",
+  source: "Total Traffic(Byte)",
+  format: (v) => `${v.toFixed(3)} GB`
+},
   {
     key: "dlRetx",
     title: "DL TCP Retransmission",
@@ -830,7 +830,7 @@ const tableHeaders = [
   "CIRCLE",
   "BRANCH",
   "KABUPATEN",
-  "TOTAL TRAFFIC (TB)",
+  "TOTAL TRAFFIC (GB)",
   "DL RETX (%)",
   "UL RETX (%)",
   "TCP SUCCESS (%)",
