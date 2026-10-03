@@ -9,8 +9,7 @@
    CONFIG
    ========================================================= */
 
-const CSV_PATH = "data/raw_data.csv";
-
+const CSV_PATH = "./data/raw_data.csv";
 /*
  * Traffic:
  * Data contoh:
@@ -477,16 +476,41 @@ function normalizeParsedRows(data) {
 }
 
 async function fetchCsvText(url) {
-    const response = await fetch(
-        url + (url.includes("?") ? "&" : "?") + "_=" + Date.now(),
-        {
-            method: "GET",
-            cache: "no-store",
-            headers: {
-                "Cache-Control": "no-cache"
-            }
-        }
+    const finalUrl = new URL(
+        url,
+        window.location.href
+    ).href;
+
+    console.log("FETCH CSV:", finalUrl);
+
+    const response = await fetch(finalUrl, {
+        method: "GET",
+        cache: "no-store"
+    });
+
+    console.log("CSV HTTP STATUS:", response.status);
+    console.log("CSV RESPONSE URL:", response.url);
+
+    if (!response.ok) {
+        throw new Error(
+            `CSV gagal diakses: HTTP ${response.status} ${response.statusText}`
+        );
+    }
+
+    const text = await response.text();
+
+    console.log("UKURAN CSV:", text.length);
+    console.log(
+        "AWAL CSV:",
+        text.substring(0, 300)
     );
+
+    if (!text || !text.trim()) {
+        throw new Error("File CSV kosong.");
+    }
+
+    return text;
+};
 
     const text = await response.text();
 
