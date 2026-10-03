@@ -483,9 +483,6 @@ async function fetchCsvText(url) {
         cache: "no-store"
     });
 
-    console.log("CSV HTTP STATUS:", response.status);
-    console.log("CSV RESPONSE URL:", response.url);
-
     if (!response.ok) {
         throw new Error(
             `CSV gagal diakses: HTTP ${response.status} ${response.statusText}`
