@@ -1,1808 +1,2648 @@
 /* =========================================================
-   SOC - SQM MONITORING
-   Final app.js
-   Data source : data/raw_data.csv
-   Timestamp   : 15 Minutes
-   Traffic     : Byte -> GB
+   SOC - SQM MONITORING DASHBOARD
+   FINAL APP.JS
+   ========================================================= */
+
+"use strict";
+
+/* =========================================================
+   CONFIG
    ========================================================= */
 
 const CSV_PATH = "data/raw_data.csv";
 
-// Source column says Byte.
-// Decimal conversion: 1 GB = 1,000,000,000 Byte.
-const TRAFFIC_DIVISOR = 1e9;
+/*
+ * Traffic:
+ * Data contoh:
+ * Total Traffic(Byte) = 0.05785, 1.57247, 3.54297, dst.
+ *
+ * Nilai source digunakan apa adanya.
+ * Jika nanti CSV benar-benar berisi BYTE mentah,
+ * ubah TRAFFIC_DIVISOR menjadi 1000000000.
+ */
+const TRAFFIC_DIVISOR = 1;
 const TRAFFIC_UNIT = "GB";
 
-let rows = [];
-let charts = {};
-let activeMap = "region";
+/* =========================================================
+   CSV COLUMNS
+   ========================================================= */
 
-const $ = (id) => document.getElementById(id);
+const COLUMNS = {
+    date: "15 Minutes",
+    region: "REGION",
+    branch: "BRANCH",
+    kabupaten: "KABUPATEN",
+    circle: "CIRCLE",
 
-const specs = [
-  {
-    key: "traffic",
-    label: "Total Traffic",
-    field: "Total Traffic(Byte)",
-    unit: TRAFFIC_UNIT,
-    agg: "sum",
-    color: "#00bfff",
-    decimals: 2
-  },
-  {
-    key: "dlRetx",
-    label: "DL TCP Retransmission",
-    field: "Downlink TCP Retransmission Rate(%)",
-    unit: "%",
-    agg: "avg",
-    color: "#ff9d00",
-    decimals: 2
-  },
-  {
-    key: "ulRetx",
-    label: "UL TCP Retransmission",
-    field: "Uplink TCP Retransmission Rate(%)",
-    unit: "%",
-    agg: "avg",
-    color: "#a84cff",
-    decimals: 2
-  },
-  {
-    key: "tcp",
-    label: "TCP Connection Success",
-    field: "TCP Connection Success Rate (Included RST)(%)",
-    unit: "%",
-    agg: "avg",
-    color: "#20e887",
-    decimals: 2
-  },
-  {
-    key: "dlLoss",
-    label: "DL TCP Packet Loss",
-    field: "Downlink TCP Packet Loss Rate(%)",
-    unit: "%",
-    agg: "avg",
-    color: "#ff476f",
-    decimals: 2
-  },
-  {
-    key: "ulLoss",
-    label: "UL TCP Packet Loss",
-    field: "Uplink TCP Packet Loss Rate(%)",
-    unit: "%",
-    agg: "avg",
-    color: "#ff168c",
-    decimals: 2
-  },
-  {
-    key: "e2e",
-    label: "E2E Delay",
-    field: "E2E Delay(ms)",
-    unit: "ms",
-    agg: "avg",
-    color: "#00d9ff",
-    decimals: 2
-  },
-  {
-    key: "synAckAck",
-    label: "SYN ACK-ACK Delay",
-    field: "SYN ACK-ACK Delay(ms)",
-    unit: "ms",
-    agg: "avg",
-    color: "#64e291",
-    decimals: 2
-  },
-  {
-    key: "synSynAck",
-    label: "SYN-SYN ACK Delay",
-    field: "SYN-SYN ACK Delay(ms)",
-    unit: "ms",
-    agg: "avg",
-    color: "#e0aaff",
-    decimals: 2
-  }
-];
+    traffic: "Total Traffic(Byte)",
+
+    dlRetx: "Downlink TCP Retransmission Rate(%)",
+    ulRetx: "Uplink TCP Retransmission Rate(%)",
+
+    tcp: "TCP Connection Success Rate (Included RST)(%)",
+
+    dlLoss: "Downlink TCP Packet Loss Rate(%)",
+    ulLoss: "Uplink TCP Packet Loss Rate(%)",
+
+    e2e: "E2E Delay(ms)",
+    synAckAck: "SYN ACK-ACK Delay(ms)",
+    synSynAck: "SYN-SYN ACK Delay(ms)"
+};
 
 /* =========================================================
-   HELPERS
+   SQM METRIC SPECIFICATION
+   ========================================================= */
+
+const specs = {
+    traffic: {
+        key: COLUMNS.traffic,
+        label: "Total Traffic",
+        agg: "sum",
+        unit: TRAFFIC_UNIT
+    },
+
+    dlRetx: {
+        key: COLUMNS.dlRetx,
+        label: "DL TCP Retransmission",
+        agg: "avg",
+        unit: "%"
+    },
+
+    ulRetx: {
+        key: COLUMNS.ulRetx,
+        label: "UL TCP Retransmission",
+        agg: "avg",
+        unit: "%"
+    },
+
+    tcp: {
+        key: COLUMNS.tcp,
+        label: "TCP Connection Success",
+        agg: "avg",
+        unit: "%"
+    },
+
+    dlLoss: {
+        key: COLUMNS.dlLoss,
+        label: "DL TCP Packet Loss",
+        agg: "avg",
+        unit: "%"
+    },
+
+    ulLoss: {
+        key: COLUMNS.ulLoss,
+        label: "UL TCP Packet Loss",
+        agg: "avg",
+        unit: "%"
+    },
+
+    e2e: {
+        key: COLUMNS.e2e,
+        label: "E2E Delay",
+        agg: "avg",
+        unit: "ms"
+    },
+
+    synAckAck: {
+        key: COLUMNS.synAckAck,
+        label: "SYN ACK-ACK Delay",
+        agg: "avg",
+        unit: "ms"
+    },
+
+    synSynAck: {
+        key: COLUMNS.synSynAck,
+        label: "SYN-SYN ACK Delay",
+        agg: "avg",
+        unit: "ms"
+    }
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+let rows = [];
+let filteredRows = [];
+
+let currentPeriod = "15min";
+let compareEnabled = false;
+let compareMode = "previous";
+
+let charts = {};
+
+let currentTableRows = [];
+let currentDataRows = [];
+
+let topologyInitialized = false;
+
+/* =========================================================
+   DOM HELPERS
+   ========================================================= */
+
+function $(selector) {
+    return document.querySelector(selector);
+}
+
+function $$(selector) {
+    return Array.from(document.querySelectorAll(selector));
+}
+
+/* =========================================================
+   HTML ESCAPE
    ========================================================= */
 
 function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
+/* =========================================================
+   NUMBER HELPERS
+   ========================================================= */
+
 function numberValue(value) {
-  if (value === null || value === undefined || value === "") {
-    return null;
-  }
+    if (value === null || value === undefined || value === "") {
+        return null;
+    }
 
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? value : null;
+    }
 
-  const cleaned = String(value)
-    .replace(/,/g, "")
-    .replace(/%/g, "")
-    .trim();
+    let text = String(value).trim();
 
-  if (!cleaned) return null;
+    if (!text) {
+        return null;
+    }
 
-  const n = Number(cleaned);
+    text = text.replace(/\s/g, "");
 
-  return Number.isFinite(n) ? n : null;
+    /*
+     * Support:
+     * 1.234,56
+     * 1234,56
+     * 1,234.56
+     * 1234.56
+     */
+
+    if (text.includes(",") && text.includes(".")) {
+        if (text.lastIndexOf(",") > text.lastIndexOf(".")) {
+            text = text.replace(/\./g, "").replace(",", ".");
+        } else {
+            text = text.replace(/,/g, "");
+        }
+    } else if (text.includes(",")) {
+        text = text.replace(",", ".");
+    }
+
+    const n = Number(text);
+
+    return Number.isFinite(n) ? n : null;
 }
 
 function formatNumber(value, decimals = 2) {
-  const n = Number(value);
+    const n = numberValue(value);
 
-  if (!Number.isFinite(n)) {
-    return "-";
-  }
+    if (n === null) {
+        return "-";
+    }
 
-  return n.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
+    return n.toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
 }
 
-function formatDateDisplay(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return "-";
-  }
+function formatInteger(value) {
+    const n = numberValue(value);
 
-  const pad = (n) => String(n).padStart(2, "0");
+    if (n === null) {
+        return "-";
+    }
 
-  return (
-    date.getFullYear() +
-    "-" +
-    pad(date.getMonth() + 1) +
-    "-" +
-    pad(date.getDate()) +
-    " " +
-    pad(date.getHours()) +
-    ":" +
-    pad(date.getMinutes())
-  );
+    return Math.round(n).toLocaleString("en-US");
+}
+
+/* =========================================================
+   DATE HELPERS
+   ========================================================= */
+
+function parseDate(value) {
+    if (!value) {
+        return null;
+    }
+
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : value;
+    }
+
+    let text = String(value)
+        .replace(/^\uFEFF/, "")
+        .trim();
+
+    if (!text) {
+        return null;
+    }
+
+    /*
+     * Format:
+     * 10/1/2026 0:00
+     * 10/1/2026 00:00
+     * 10/01/2026 12:15
+     */
+
+    let match = text.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+    );
+
+    if (match) {
+        const month = Number(match[1]);
+        const day = Number(match[2]);
+        const year = Number(match[3]);
+
+        const hour = Number(match[4] || 0);
+        const minute = Number(match[5] || 0);
+        const second = Number(match[6] || 0);
+
+        const date = new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            second
+        );
+
+        if (
+            date.getFullYear() === year &&
+            date.getMonth() === month - 1 &&
+            date.getDate() === day
+        ) {
+            return date;
+        }
+    }
+
+    /*
+     * Format:
+     * 2026-10-01 00:00
+     */
+
+    match = text.match(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+    );
+
+    if (match) {
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+
+        const hour = Number(match[4] || 0);
+        const minute = Number(match[5] || 0);
+        const second = Number(match[6] || 0);
+
+        const date = new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            second
+        );
+
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
+
+    /*
+     * ISO / browser-compatible date
+     */
+
+    const parsed = new Date(text);
+
+    return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function dateInputValue(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return "";
-  }
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return "";
+    }
 
-  const pad = (n) => String(n).padStart(2, "0");
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
 
-  return (
-    date.getFullYear() +
-    "-" +
-    pad(date.getMonth() + 1) +
-    "-" +
-    pad(date.getDate())
-  );
+    return `${y}-${m}-${d}`;
 }
 
-function parseDate(value) {
-  if (!value) return null;
+function formatDateDisplay(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return "-";
+    }
 
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
 
-  const raw = String(value).trim();
+function formatDateTime(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return "-";
+    }
 
-  if (!raw) return null;
+    return date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
 
-  /*
-    Expected:
-    10/1/2026 0:00
-    10/1/2026 00:15
-    10/1/2026 13:45:00
-  */
+function dateKey(date) {
+    if (!(date instanceof Date)) {
+        return "";
+    }
 
-  const match = raw.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/
-  );
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+    ].join("-");
+}
 
-  if (match) {
-    const month = Number(match[1]);
-    const day = Number(match[2]);
-    const year = Number(match[3]);
-    const hour = Number(match[4]);
-    const minute = Number(match[5]);
-    const second = Number(match[6] || 0);
+/* =========================================================
+   CSV HEADER NORMALIZATION
+   ========================================================= */
 
-    const d = new Date(
-      year,
-      month - 1,
-      day,
-      hour,
-      minute,
-      second,
-      0
+function normalizeHeader(header) {
+    return String(header ?? "")
+        .replace(/^\uFEFF/, "")
+        .replace(/\u00A0/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+/* =========================================================
+   VALIDATE CSV
+   ========================================================= */
+
+function validateColumns(data) {
+    if (!Array.isArray(data) || data.length === 0) {
+        throw new Error(
+            "CSV tidak memiliki data. Pastikan data/raw_data.csv tidak kosong."
+        );
+    }
+
+    const first = data[0];
+
+    if (!first || typeof first !== "object") {
+        throw new Error(
+            "Format CSV tidak dapat dibaca sebagai tabel."
+        );
+    }
+
+    const actualColumns = Object.keys(first);
+
+    const requiredColumns = Object.values(COLUMNS);
+
+    const missing = requiredColumns.filter(
+        column => !actualColumns.includes(column)
     );
 
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
+    if (missing.length > 0) {
+        console.error("Kolom CSV ditemukan:", actualColumns);
+        console.error("Kolom yang dibutuhkan:", requiredColumns);
+        console.error("Kolom yang hilang:", missing);
 
-  // ISO fallback
-  const fallback = new Date(raw);
+        throw new Error(
+            "Kolom CSV tidak sesuai. Kolom hilang: " +
+            missing.join(", ")
+        );
+    }
 
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
+    return true;
 }
 
-function trafficGB(row) {
-  const value = numberValue(row["Total Traffic(Byte)"]);
+/* =========================================================
+   CLEAN ROWS
+   ========================================================= */
 
-  if (value === null) return null;
+function cleanRows(data) {
+    const cleaned = [];
 
-  return value / TRAFFIC_DIVISOR;
+    for (const raw of data) {
+        if (!raw || typeof raw !== "object") {
+            continue;
+        }
+
+        const row = {};
+
+        Object.keys(raw).forEach(key => {
+            const cleanKey = normalizeHeader(key);
+
+            let value = raw[key];
+
+            if (typeof value === "string") {
+                value = value
+                    .replace(/^\uFEFF/, "")
+                    .trim();
+            }
+
+            row[cleanKey] = value;
+        });
+
+        const date = parseDate(row[COLUMNS.date]);
+
+        if (!date) {
+            return;
+        }
+
+        row.__date = date;
+
+        row.__region = String(row[COLUMNS.region] || "").trim();
+        row.__circle = String(row[COLUMNS.circle] || "").trim();
+        row.__branch = String(row[COLUMNS.branch] || "").trim();
+        row.__kabupaten = String(row[COLUMNS.kabupaten] || "").trim();
+
+        cleaned.push(row);
+    }
+
+    cleaned.sort((a, b) => a.__date - b.__date);
+
+    return cleaned;
 }
 
-function metricValue(row, spec) {
-  if (spec.key === "traffic") {
-    return trafficGB(row);
-  }
+/* =========================================================
+   LOAD CSV
+   ========================================================= */
 
-  return numberValue(row[spec.field]);
+async function loadCsv() {
+    console.log("========================================");
+    console.log("SOC-SQM-DASHBOARD");
+    console.log("Loading CSV...");
+    console.log("CSV PATH:", CSV_PATH);
+    console.log("========================================");
+
+    showLoadingState();
+
+    try {
+        const url =
+            CSV_PATH +
+            (CSV_PATH.includes("?") ? "&" : "?") +
+            "_=" +
+            Date.now();
+
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "Cache-Control": "no-cache"
+            }
+        });
+
+        console.log("CSV HTTP status:", response.status);
+        console.log("CSV URL:", url);
+
+        if (!response.ok) {
+            throw new Error(
+                `CSV gagal diakses. HTTP ${response.status} ${response.statusText}`
+            );
+        }
+
+        const text = await response.text();
+
+        console.log("Ukuran CSV:", text.length);
+
+        if (!text || !text.trim()) {
+            throw new Error(
+                "File CSV kosong."
+            );
+        }
+
+        /*
+         * Detect GitHub Pages / HTML error page
+         */
+
+        const firstText = text.trim().slice(0, 200).toLowerCase();
+
+        if (
+            firstText.startsWith("<!doctype html") ||
+            firstText.startsWith("<html") ||
+            firstText.includes("<html")
+        ) {
+            throw new Error(
+                "Yang diterima bukan file CSV, tetapi HTML. Periksa path: " +
+                CSV_PATH
+            );
+        }
+
+        if (typeof Papa === "undefined") {
+            throw new Error(
+                "PapaParse belum tersedia. Pastikan PapaParse dimuat di index.html."
+            );
+        }
+
+        Papa.parse(text, {
+            header: true,
+            skipEmptyLines: "greedy",
+            dynamicTyping: false,
+
+            /*
+             * CSV user menggunakan comma.
+             */
+            delimiter: ",",
+
+            transformHeader(header) {
+                return normalizeHeader(header);
+            },
+
+            complete(results) {
+                try {
+                    console.log(
+                        "Header CSV:",
+                        results.meta.fields
+                    );
+
+                    console.log(
+                        "Raw rows:",
+                        results.data.length
+                    );
+
+                    if (results.errors && results.errors.length) {
+                        console.warn(
+                            "CSV parsing warnings:",
+                            results.errors
+                        );
+                    }
+
+                    validateColumns(results.data);
+
+                    rows = cleanRows(results.data);
+
+                    console.log(
+                        "Rows setelah cleaning:",
+                        rows.length
+                    );
+
+                    if (!rows.length) {
+                        throw new Error(
+                            "CSV berhasil dibaca tetapi tidak ada row dengan tanggal valid pada kolom '" +
+                            COLUMNS.date +
+                            "'."
+                        );
+                    }
+
+                    filteredRows = rows.slice();
+
+                    initializeDashboard();
+
+                    console.log("CSV berhasil di-load.");
+                    console.log("Jumlah rows:", rows.length);
+                    console.log(
+                        "Tanggal:",
+                        formatDateTime(rows[0].__date),
+                        "sampai",
+                        formatDateTime(rows[rows.length - 1].__date)
+                    );
+
+                    hideLoadingState();
+
+                    updateAll();
+                } catch (error) {
+                    handleCsvError(error);
+                }
+            },
+
+            error(error) {
+                handleCsvError(error);
+            }
+        });
+
+    } catch (error) {
+        handleCsvError(error);
+    }
+}
+
+/* =========================================================
+   ERROR HANDLING
+   ========================================================= */
+
+function handleCsvError(error) {
+    console.error("CSV ERROR:", error);
+
+    rows = [];
+    filteredRows = [];
+
+    hideLoadingState();
+
+    const message =
+        error?.message ||
+        "CSV gagal dimuat.";
+
+    const container =
+        $("#kpis") ||
+        $(".dashboard-content") ||
+        document.body;
+
+    if (container) {
+        const existing = document.querySelector(".csv-error-box");
+
+        if (existing) {
+            existing.remove();
+        }
+
+        const errorBox = document.createElement("div");
+
+        errorBox.className = "csv-error-box";
+
+        errorBox.style.cssText = `
+            margin: 20px 0;
+            padding: 18px 20px;
+            border: 1px solid rgba(255,80,80,.35);
+            border-radius: 12px;
+            background: rgba(120,20,20,.15);
+            color: #ffb4b4;
+            font-family: inherit;
+        `;
+
+        errorBox.innerHTML = `
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">
+                CSV gagal dimuat
+            </div>
+
+            <div style="font-size:13px;line-height:1.6;">
+                ${escapeHtml(message)}
+            </div>
+
+            <div style="margin-top:10px;font-size:12px;opacity:.75;">
+                Path yang dibaca:
+                <strong>${escapeHtml(CSV_PATH)}</strong>
+            </div>
+        `;
+
+        container.prepend(errorBox);
+    }
+}
+
+/* =========================================================
+   LOADING STATE
+   ========================================================= */
+
+function showLoadingState() {
+    const kpis = $("#kpis");
+
+    if (kpis) {
+        kpis.innerHTML = `
+            <div class="loading-state">
+                Loading SQM data...
+            </div>
+        `;
+    }
+}
+
+function hideLoadingState() {
+    const loading = document.querySelector(".loading-state");
+
+    if (loading) {
+        loading.remove();
+    }
+}
+
+/* =========================================================
+   FILTER ELEMENTS
+   ========================================================= */
+
+function getFilterElements() {
+    return {
+        dateFrom: $("#dateFrom"),
+        dateTo: $("#dateTo"),
+        period: $("#period"),
+
+        region: $("#region"),
+        circle: $("#circle"),
+        branch: $("#branch"),
+        kabupaten: $("#kabupaten"),
+
+        compare: $("#compare"),
+        compareMode: $("#compareMode"),
+
+        reset: $("#reset")
+    };
+}
+
+/* =========================================================
+   UNIQUE VALUES
+   ========================================================= */
+
+function uniqueSorted(values) {
+    return [...new Set(
+        values
+            .map(v => String(v ?? "").trim())
+            .filter(Boolean)
+    )].sort((a, b) =>
+        a.localeCompare(b, undefined, {
+            numeric: true,
+            sensitivity: "base"
+        })
+    );
+}
+
+/* =========================================================
+   SELECT OPTIONS
+   ========================================================= */
+
+function setSelectOptions(select, values, placeholder = "All") {
+    if (!select) {
+        return;
+    }
+
+    const current = select.value;
+
+    select.innerHTML = "";
+
+    const first = document.createElement("option");
+
+    first.value = "";
+    first.textContent = placeholder;
+
+    select.appendChild(first);
+
+    values.forEach(value => {
+        const option = document.createElement("option");
+
+        option.value = value;
+        option.textContent = value;
+
+        select.appendChild(option);
+    });
+
+    if (values.includes(current)) {
+        select.value = current;
+    } else {
+        select.value = "";
+    }
+}
+
+/* =========================================================
+   DATE RANGE
+   ========================================================= */
+
+function getMinMaxDate(sourceRows = rows) {
+    if (!sourceRows.length) {
+        return {
+            min: null,
+            max: null
+        };
+    }
+
+    let min = sourceRows[0].__date;
+    let max = sourceRows[0].__date;
+
+    sourceRows.forEach(row => {
+        if (row.__date < min) {
+            min = row.__date;
+        }
+
+        if (row.__date > max) {
+            max = row.__date;
+        }
+    });
+
+    return {
+        min,
+        max
+    };
+}
+
+function isSameOrAfter(date, from) {
+    if (!from) {
+        return true;
+    }
+
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+
+    const f = new Date(from);
+    f.setHours(0, 0, 0, 0);
+
+    return d >= f;
+}
+
+function isSameOrBefore(date, to) {
+    if (!to) {
+        return true;
+    }
+
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+
+    const t = new Date(to);
+    t.setHours(0, 0, 0, 0);
+
+    return d <= t;
 }
 
 function getDateRange() {
-  const fromValue = $("dateFrom")?.value;
-  const toValue = $("dateTo")?.value;
+    const {
+        dateFrom,
+        dateTo
+    } = getFilterElements();
 
-  let from = null;
-  let to = null;
+    const from = dateFrom?.value
+        ? parseDate(dateFrom.value)
+        : null;
 
-  if (fromValue) {
-    from = new Date(fromValue + "T00:00:00");
-  }
+    const to = dateTo?.value
+        ? parseDate(dateTo.value)
+        : null;
 
-  if (toValue) {
-    to = new Date(toValue + "T23:59:59.999");
-  }
-
-  return { from, to };
-}
-
-function isDateInRange(date, from, to) {
-  if (!date) return false;
-
-  if (from && date < from) return false;
-
-  if (to && date > to) return false;
-
-  return true;
-}
-
-function uniqueSorted(values) {
-  return [...new Set(
-    values
-      .filter((v) => v !== undefined && v !== null && String(v).trim() !== "")
-      .map((v) => String(v).trim())
-  )].sort((a, b) =>
-    a.localeCompare(b, undefined, {
-      numeric: true,
-      sensitivity: "base"
-    })
-  );
-}
-
-function setSelectOptions(select, values, allLabel) {
-  if (!select) return;
-
-  const current = select.value || "ALL";
-
-  select.innerHTML = "";
-
-  const allOption = document.createElement("option");
-  allOption.value = "ALL";
-  allOption.textContent = allLabel;
-
-  select.appendChild(allOption);
-
-  values.forEach((value) => {
-    const option = document.createElement("option");
-
-    option.value = value;
-    option.textContent = value;
-
-    select.appendChild(option);
-  });
-
-  if ([...select.options].some((option) => option.value === current)) {
-    select.value = current;
-  } else {
-    select.value = "ALL";
-  }
+    return {
+        from,
+        to
+    };
 }
 
 /* =========================================================
-   FILTERS
+   BASE FILTER
    ========================================================= */
 
 function getBaseFilteredRows() {
-  const region = $("region")?.value || "ALL";
-  const circle = $("circle")?.value || "ALL";
-  const branch = $("branch")?.value || "ALL";
-  const kabupaten = $("kabupaten")?.value || "ALL";
+    const {
+        region,
+        circle,
+        branch,
+        kabupaten
+    } = getFilterElements();
 
-  return rows.filter((row) => {
-    if (region !== "ALL" && String(row.REGION).trim() !== region) {
-      return false;
-    }
+    const {
+        from,
+        to
+    } = getDateRange();
 
-    if (circle !== "ALL" && String(row.CIRCLE).trim() !== circle) {
-      return false;
-    }
+    return rows.filter(row => {
+        if (
+            region?.value &&
+            row.__region !== region.value
+        ) {
+            return false;
+        }
 
-    if (branch !== "ALL" && String(row.BRANCH).trim() !== branch) {
-      return false;
-    }
+        if (
+            circle?.value &&
+            row.__circle !== circle.value
+        ) {
+            return false;
+        }
 
-    if (
-      kabupaten !== "ALL" &&
-      String(row.KABUPATEN).trim() !== kabupaten
-    ) {
-      return false;
-    }
+        if (
+            branch?.value &&
+            row.__branch !== branch.value
+        ) {
+            return false;
+        }
 
-    return true;
-  });
-}
+        if (
+            kabupaten?.value &&
+            row.__kabupaten !== kabupaten.value
+        ) {
+            return false;
+        }
 
-function setupFilters() {
-  if (!rows.length) return;
+        if (!isSameOrAfter(row.__date, from)) {
+            return false;
+        }
 
-  const dateValues = rows
-    .map((row) => row.__date)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+        if (!isSameOrBefore(row.__date, to)) {
+            return false;
+        }
 
-  if (dateValues.length) {
-    const firstDate = dateValues[0];
-    const lastDate = dateValues[dateValues.length - 1];
-
-    const dateFrom = $("dateFrom");
-    const dateTo = $("dateTo");
-
-    if (dateFrom && !dateFrom.value) {
-      dateFrom.value = dateInputValue(firstDate);
-    }
-
-    if (dateTo && !dateTo.value) {
-      dateTo.value = dateInputValue(lastDate);
-    }
-  }
-
-  updateDependentFilters();
-
-  $("region")?.addEventListener("change", () => {
-    updateDependentFilters("region");
-    update();
-  });
-
-  $("circle")?.addEventListener("change", () => {
-    updateDependentFilters("circle");
-    update();
-  });
-
-  $("branch")?.addEventListener("change", () => {
-    updateDependentFilters("branch");
-    update();
-  });
-
-  $("kabupaten")?.addEventListener("change", () => {
-    update();
-  });
-
-  $("dateFrom")?.addEventListener("change", update);
-  $("dateTo")?.addEventListener("change", update);
-  $("period")?.addEventListener("change", update);
-
-  $("compare")?.addEventListener("change", () => {
-    const mode = $("compareMode");
-
-    if (mode) {
-      mode.disabled = !$("compare").checked;
-    }
-
-    update();
-  });
-
-  $("compareMode")?.addEventListener("change", update);
-
-  $("reset")?.addEventListener("click", resetFilters);
-
-  const compareMode = $("compareMode");
-
-  if (compareMode) {
-    compareMode.disabled = !$("compare")?.checked;
-  }
-}
-
-function updateDependentFilters(changed = "") {
-  const selectedRegion = $("region")?.value || "ALL";
-  const selectedCircle = $("circle")?.value || "ALL";
-  const selectedBranch = $("branch")?.value || "ALL";
-  const selectedKabupaten = $("kabupaten")?.value || "ALL";
-
-  let filtered = [...rows];
-
-  if (selectedRegion !== "ALL") {
-    filtered = filtered.filter(
-      (row) => String(row.REGION).trim() === selectedRegion
-    );
-  }
-
-  setSelectOptions(
-    $("circle"),
-    uniqueSorted(filtered.map((row) => row.CIRCLE)),
-    "All Circle"
-  );
-
-  const circleValue =
-    selectedCircle !== "ALL" &&
-    [...($("circle")?.options || [])].some(
-      (option) => option.value === selectedCircle
-    )
-      ? selectedCircle
-      : "ALL";
-
-  if ($("circle")) {
-    $("circle").value = circleValue;
-  }
-
-  if (circleValue !== "ALL") {
-    filtered = filtered.filter(
-      (row) => String(row.CIRCLE).trim() === circleValue
-    );
-  }
-
-  setSelectOptions(
-    $("branch"),
-    uniqueSorted(filtered.map((row) => row.BRANCH)),
-    "All Branch"
-  );
-
-  const branchValue =
-    selectedBranch !== "ALL" &&
-    [...($("branch")?.options || [])].some(
-      (option) => option.value === selectedBranch
-    )
-      ? selectedBranch
-      : "ALL";
-
-  if ($("branch")) {
-    $("branch").value = branchValue;
-  }
-
-  if (branchValue !== "ALL") {
-    filtered = filtered.filter(
-      (row) => String(row.BRANCH).trim() === branchValue
-    );
-  }
-
-  setSelectOptions(
-    $("kabupaten"),
-    uniqueSorted(filtered.map((row) => row.KABUPATEN)),
-    "All Kabupaten"
-  );
-
-  const kabupatenValue =
-    selectedKabupaten !== "ALL" &&
-    [...($("kabupaten")?.options || [])].some(
-      (option) => option.value === selectedKabupaten
-    )
-      ? selectedKabupaten
-      : "ALL";
-
-  if ($("kabupaten")) {
-    $("kabupaten").value = kabupatenValue;
-  }
-
-  // Region is independent root filter.
-  setSelectOptions(
-    $("region"),
-    uniqueSorted(rows.map((row) => row.REGION)),
-    "All Region"
-  );
-
-  if (
-    selectedRegion !== "ALL" &&
-    [...($("region")?.options || [])].some(
-      (option) => option.value === selectedRegion
-    )
-  ) {
-    $("region").value = selectedRegion;
-  }
-}
-
-function getFilteredRows() {
-  const { from, to } = getDateRange();
-
-  const region = $("region")?.value || "ALL";
-  const circle = $("circle")?.value || "ALL";
-  const branch = $("branch")?.value || "ALL";
-  const kabupaten = $("kabupaten")?.value || "ALL";
-
-  return rows.filter((row) => {
-    if (!isDateInRange(row.__date, from, to)) {
-      return false;
-    }
-
-    if (
-      region !== "ALL" &&
-      String(row.REGION).trim() !== region
-    ) {
-      return false;
-    }
-
-    if (
-      circle !== "ALL" &&
-      String(row.CIRCLE).trim() !== circle
-    ) {
-      return false;
-    }
-
-    if (
-      branch !== "ALL" &&
-      String(row.BRANCH).trim() !== branch
-    ) {
-      return false;
-    }
-
-    if (
-      kabupaten !== "ALL" &&
-      String(row.KABUPATEN).trim() !== kabupaten
-    ) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function resetFilters() {
-  const dateValues = rows
-    .map((row) => row.__date)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (dateValues.length) {
-    $("dateFrom").value = dateInputValue(dateValues[0]);
-    $("dateTo").value = dateInputValue(dateValues[dateValues.length - 1]);
-  }
-
-  $("period").value = "15min";
-  $("region").value = "ALL";
-
-  updateDependentFilters();
-
-  $("circle").value = "ALL";
-  $("branch").value = "ALL";
-  $("kabupaten").value = "ALL";
-
-  $("compare").checked = false;
-  $("compareMode").value = "lastWeek";
-  $("compareMode").disabled = true;
-
-  update();
+        return true;
+    });
 }
 
 /* =========================================================
-   PERIOD / AGGREGATION
+   DEPENDENT FILTERS
+   ========================================================= */
+
+function updateDependentFilters() {
+    const {
+        region,
+        circle,
+        branch,
+        kabupaten
+    } = getFilterElements();
+
+    if (!region || !circle || !branch || !kabupaten) {
+        return;
+    }
+
+    /*
+     * REGION
+     */
+
+    const regions = uniqueSorted(
+        rows.map(row => row.__region)
+    );
+
+    setSelectOptions(
+        region,
+        regions,
+        "All Regions"
+    );
+
+    /*
+     * CIRCLE
+     */
+
+    let circleRows = rows;
+
+    if (region.value) {
+        circleRows = circleRows.filter(
+            row => row.__region === region.value
+        );
+    }
+
+    const circles = uniqueSorted(
+        circleRows.map(row => row.__circle)
+    );
+
+    setSelectOptions(
+        circle,
+        circles,
+        "All Circles"
+    );
+
+    /*
+     * BRANCH
+     */
+
+    let branchRows = circleRows;
+
+    if (circle.value) {
+        branchRows = branchRows.filter(
+            row => row.__circle === circle.value
+        );
+    }
+
+    const branches = uniqueSorted(
+        branchRows.map(row => row.__branch)
+    );
+
+    setSelectOptions(
+        branch,
+        branches,
+        "All Branches"
+    );
+
+    /*
+     * KABUPATEN
+     */
+
+    let kabRows = branchRows;
+
+    if (branch.value) {
+        kabRows = kabRows.filter(
+            row => row.__branch === branch.value
+        );
+    }
+
+    const kabupatens = uniqueSorted(
+        kabRows.map(row => row.__kabupaten)
+    );
+
+    setSelectOptions(
+        kabupaten,
+        kabupatens,
+        "All Kabupaten"
+    );
+}
+
+/* =========================================================
+   SET DATE LIMITS
+   ========================================================= */
+
+function initializeDateInputs() {
+    const {
+        dateFrom,
+        dateTo
+    } = getFilterElements();
+
+    if (!dateFrom || !dateTo || !rows.length) {
+        return;
+    }
+
+    const {
+        min,
+        max
+    } = getMinMaxDate(rows);
+
+    const minValue = dateInputValue(min);
+    const maxValue = dateInputValue(max);
+
+    dateFrom.min = minValue;
+    dateFrom.max = maxValue;
+
+    dateTo.min = minValue;
+    dateTo.max = maxValue;
+
+    /*
+     * Default:
+     * seluruh periode data.
+     */
+
+    if (!dateFrom.value) {
+        dateFrom.value = minValue;
+    }
+
+    if (!dateTo.value) {
+        dateTo.value = maxValue;
+    }
+}
+
+/* =========================================================
+   GET FILTERED ROWS
+   ========================================================= */
+
+function getFilteredRows() {
+    return getBaseFilteredRows();
+}
+
+/* =========================================================
+   PERIOD BUCKET
    ========================================================= */
 
 function bucketDate(date, period) {
-  const d = new Date(date);
+    const d = new Date(date);
 
-  if (period === "hourly") {
-    d.setMinutes(0, 0, 0);
-    return d;
-  }
+    if (period === "15min") {
+        const minute = d.getMinutes();
 
-  if (period === "daily") {
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
+        const bucketMinute =
+            Math.floor(minute / 15) * 15;
 
-  // 15-minute
-  const minutes = d.getMinutes();
-  const bucket = Math.floor(minutes / 15) * 15;
+        d.setMinutes(bucketMinute, 0, 0);
 
-  d.setMinutes(bucket, 0, 0);
-
-  return d;
-}
-
-function aggregateRows(inputRows, period) {
-  const buckets = new Map();
-
-  inputRows.forEach((row) => {
-    if (!row.__date) return;
-
-    const bucket = bucketDate(row.__date, period);
-    const key = bucket.getTime();
-
-    if (!buckets.has(key)) {
-      buckets.set(key, {
-        date: bucket,
-        count: 0,
-        values: {}
-      });
-
-      specs.forEach((spec) => {
-        buckets.get(key).values[spec.key] = [];
-      });
+        return d;
     }
 
-    const bucketData = buckets.get(key);
+    if (period === "hourly" || period === "hour") {
+        d.setMinutes(0, 0, 0);
 
-    bucketData.count += 1;
+        return d;
+    }
 
-    specs.forEach((spec) => {
-      const value = metricValue(row, spec);
+    if (period === "daily" || period === "day") {
+        d.setHours(0, 0, 0, 0);
 
-      if (value !== null && Number.isFinite(value)) {
-        bucketData.values[spec.key].push(value);
-      }
-    });
-  });
+        return d;
+    }
 
-  return [...buckets.values()]
-    .sort((a, b) => a.date - b.date)
-    .map((bucket) => {
-      const result = {
-        date: bucket.date,
-        count: bucket.count
-      };
-
-      specs.forEach((spec) => {
-        const values = bucket.values[spec.key];
-
-        if (!values.length) {
-          result[spec.key] = null;
-          return;
-        }
-
-        if (spec.agg === "sum") {
-          result[spec.key] = values.reduce(
-            (sum, value) => sum + value,
-            0
-          );
-        } else {
-          result[spec.key] =
-            values.reduce((sum, value) => sum + value, 0) /
-            values.length;
-        }
-      });
-
-      return result;
-    });
+    return d;
 }
 
 /* =========================================================
-   COMPARE
+   AGGREGATE ROWS
    ========================================================= */
 
-function shiftRowsForComparison(inputRows, mode) {
-  if (!inputRows.length) return [];
+function average(values) {
+    const valid = values.filter(
+        value => value !== null
+    );
 
-  const dates = inputRows
-    .map((row) => row.__date)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+    if (!valid.length) {
+        return null;
+    }
 
-  if (!dates.length) return [];
+    return valid.reduce(
+        (sum, value) => sum + value,
+        0
+    ) / valid.length;
+}
 
-  const from = dates[0];
-  const to = dates[dates.length - 1];
+function aggregateRows(sourceRows, period = currentPeriod) {
+    if (!sourceRows.length) {
+        return [];
+    }
 
-  let shiftMs;
+    const groups = new Map();
 
-  if (mode === "lastWeek") {
-    shiftMs = 7 * 24 * 60 * 60 * 1000;
-  } else {
-    shiftMs = to.getTime() - from.getTime() + 24 * 60 * 60 * 1000;
-  }
-
-  const comparison = inputRows
-    .map((row) => {
-      const clone = { ...row };
-
-      if (row.__date) {
-        clone.__date = new Date(
-          row.__date.getTime() - shiftMs
+    sourceRows.forEach(row => {
+        const bucket = bucketDate(
+            row.__date,
+            period
         );
-      }
 
-      return clone;
+        const key = bucket.getTime();
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                date: bucket,
+                rows: []
+            });
+        }
+
+        groups.get(key).rows.push(row);
     });
 
-  return comparison;
+    const result = [];
+
+    groups.forEach(group => {
+        const groupRows = group.rows;
+
+        const item = {
+            date: group.date,
+            count: groupRows.length
+        };
+
+        /*
+         * Traffic SUM
+         */
+
+        const trafficValues = groupRows
+            .map(row =>
+                numberValue(row[COLUMNS.traffic])
+            )
+            .filter(v => v !== null);
+
+        item.traffic =
+            trafficValues.length
+                ? trafficValues.reduce(
+                    (sum, value) => sum + value,
+                    0
+                ) / TRAFFIC_DIVISOR
+                : null;
+
+        /*
+         * Average metrics
+         */
+
+        item.dlRetx = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.dlRetx])
+            )
+        );
+
+        item.ulRetx = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.ulRetx])
+            )
+        );
+
+        item.tcp = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.tcp])
+            )
+        );
+
+        item.dlLoss = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.dlLoss])
+            )
+        );
+
+        item.ulLoss = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.ulLoss])
+            )
+        );
+
+        item.e2e = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.e2e])
+            )
+        );
+
+        item.synAckAck = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.synAckAck])
+            )
+        );
+
+        item.synSynAck = average(
+            groupRows.map(row =>
+                numberValue(row[COLUMNS.synSynAck])
+            )
+        );
+
+        result.push(item);
+    });
+
+    result.sort(
+        (a, b) => a.date - b.date
+    );
+
+    return result;
+}
+
+/* =========================================================
+   KPI CALCULATIONS
+   ========================================================= */
+
+function calculateKpis(sourceRows) {
+    if (!sourceRows.length) {
+        return {
+            traffic: null,
+            dlRetx: null,
+            ulRetx: null,
+            tcp: null,
+            dlLoss: null,
+            ulLoss: null,
+            e2e: null,
+            synAckAck: null,
+            synSynAck: null
+        };
+    }
+
+    const traffic = sourceRows
+        .map(row =>
+            numberValue(row[COLUMNS.traffic])
+        )
+        .filter(v => v !== null)
+        .reduce(
+            (sum, value) => sum + value,
+            0
+        ) / TRAFFIC_DIVISOR;
+
+    return {
+        traffic,
+
+        dlRetx: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.dlRetx])
+            )
+        ),
+
+        ulRetx: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.ulRetx])
+            )
+        ),
+
+        tcp: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.tcp])
+            )
+        ),
+
+        dlLoss: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.dlLoss])
+            )
+        ),
+
+        ulLoss: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.ulLoss])
+            )
+        ),
+
+        e2e: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.e2e])
+            )
+        ),
+
+        synAckAck: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.synAckAck])
+            )
+        ),
+
+        synSynAck: average(
+            sourceRows.map(row =>
+                numberValue(row[COLUMNS.synSynAck])
+            )
+        )
+    };
+}
+
+/* =========================================================
+   RENDER KPI
+   ========================================================= */
+
+function renderKpis(sourceRows) {
+    const container = $("#kpis");
+
+    if (!container) {
+        return;
+    }
+
+    if (!sourceRows.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                No data for selected filters.
+            </div>
+        `;
+
+        return;
+    }
+
+    const kpi = calculateKpis(sourceRows);
+
+    const cards = [
+        {
+            key: "traffic",
+            label: "Total Traffic",
+            value: formatNumber(kpi.traffic, 2),
+            unit: TRAFFIC_UNIT
+        },
+        {
+            key: "tcp",
+            label: "TCP Connection Success",
+            value: formatNumber(kpi.tcp, 2),
+            unit: "%"
+        },
+        {
+            key: "dlRetx",
+            label: "DL TCP Retransmission",
+            value: formatNumber(kpi.dlRetx, 2),
+            unit: "%"
+        },
+        {
+            key: "ulRetx",
+            label: "UL TCP Retransmission",
+            value: formatNumber(kpi.ulRetx, 2),
+            unit: "%"
+        },
+        {
+            key: "dlLoss",
+            label: "DL TCP Packet Loss",
+            value: formatNumber(kpi.dlLoss, 2),
+            unit: "%"
+        },
+        {
+            key: "ulLoss",
+            label: "UL TCP Packet Loss",
+            value: formatNumber(kpi.ulLoss, 2),
+            unit: "%"
+        },
+        {
+            key: "e2e",
+            label: "E2E Delay",
+            value: formatNumber(kpi.e2e, 2),
+            unit: "ms"
+        },
+        {
+            key: "synAckAck",
+            label: "SYN ACK-ACK Delay",
+            value: formatNumber(kpi.synAckAck, 2),
+            unit: "ms"
+        },
+        {
+            key: "synSynAck",
+            label: "SYN-SYN ACK Delay",
+            value: formatNumber(kpi.synSynAck, 2),
+            unit: "ms"
+        }
+    ];
+
+    container.innerHTML = cards.map(card => `
+        <div class="kpi-card" data-metric="${card.key}">
+            <div class="kpi-label">
+                ${escapeHtml(card.label)}
+            </div>
+
+            <div class="kpi-value">
+                ${escapeHtml(card.value)}
+            </div>
+
+            <div class="kpi-unit">
+                ${escapeHtml(card.unit)}
+            </div>
+        </div>
+    `).join("");
+}
+
+/* =========================================================
+   CHART HELPERS
+   ========================================================= */
+
+function destroyChart(name) {
+    if (charts[name]) {
+        charts[name].destroy();
+        charts[name] = null;
+    }
+}
+
+function getChartCanvas(name) {
+    const possibleIds = [
+        name,
+        `${name}Chart`,
+        `chart-${name}`
+    ];
+
+    for (const id of possibleIds) {
+        const element = document.getElementById(id);
+
+        if (element) {
+            return element;
+        }
+    }
+
+    return null;
+}
+
+function chartLabel(date, period, multipleDays = false) {
+    const d = new Date(date);
+
+    if (period === "daily" || period === "day") {
+        return d.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short"
+        });
+    }
+
+    const time = d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+    if (multipleDays) {
+        const datePart = d.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short"
+        });
+
+        return `${datePart} ${time}`;
+    }
+
+    return time;
+}
+
+/* =========================================================
+   CHART DATA
+   ========================================================= */
+
+function buildChartData(data) {
+    const multipleDays =
+        data.length > 1 &&
+        dateKey(data[0].date) !==
+        dateKey(data[data.length - 1].date);
+
+    return {
+        labels: data.map(item =>
+            chartLabel(
+                item.date,
+                currentPeriod,
+                multipleDays
+            )
+        ),
+
+        traffic: data.map(item =>
+            item.traffic
+        ),
+
+        tcp: data.map(item =>
+            item.tcp
+        ),
+
+        dlRetx: data.map(item =>
+            item.dlRetx
+        ),
+
+        ulRetx: data.map(item =>
+            item.ulRetx
+        ),
+
+        dlLoss: data.map(item =>
+            item.dlLoss
+        ),
+
+        ulLoss: data.map(item =>
+            item.ulLoss
+        ),
+
+        e2e: data.map(item =>
+            item.e2e
+        ),
+
+        synAckAck: data.map(item =>
+            item.synAckAck
+        ),
+
+        synSynAck: data.map(item =>
+            item.synSynAck
+        )
+    };
+}
+
+/* =========================================================
+   CREATE CHART
+   ========================================================= */
+
+function createLineChart(
+    canvas,
+    chartName,
+    labels,
+    datasets
+) {
+    if (!canvas || typeof Chart === "undefined") {
+        return;
+    }
+
+    destroyChart(chartName);
+
+    charts[chartName] = new Chart(
+        canvas.getContext("2d"),
+        {
+            type: "line",
+
+            data: {
+                labels,
+
+                datasets
+            },
+
+            options: {
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+
+                    tooltip: {
+                        mode: "index",
+                        intersect: false
+                    }
+                },
+
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    },
+
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        }
+    );
+}
+
+/* =========================================================
+   RENDER CHARTS
+   ========================================================= */
+
+function renderCharts(sourceRows) {
+    if (typeof Chart === "undefined") {
+        console.warn(
+            "Chart.js tidak ditemukan."
+        );
+
+        return;
+    }
+
+    const data = aggregateRows(
+        sourceRows,
+        currentPeriod
+    );
+
+    const chartData = buildChartData(data);
+
+    /*
+     * Traffic
+     */
+
+    const trafficCanvas =
+        getChartCanvas("traffic");
+
+    if (trafficCanvas) {
+        createLineChart(
+            trafficCanvas,
+            "traffic",
+            chartData.labels,
+            [
+                {
+                    label: `Traffic (${TRAFFIC_UNIT})`,
+                    data: chartData.traffic,
+                    tension: 0.25,
+                    spanGaps: true
+                }
+            ]
+        );
+    }
+
+    /*
+     * TCP
+     */
+
+    const tcpCanvas =
+        getChartCanvas("tcp");
+
+    if (tcpCanvas) {
+        createLineChart(
+            tcpCanvas,
+            "tcp",
+            chartData.labels,
+            [
+                {
+                    label: "TCP Connection Success (%)",
+                    data: chartData.tcp,
+                    tension: 0.25,
+                    spanGaps: true
+                }
+            ]
+        );
+    }
+
+    /*
+     * Retransmission
+     */
+
+    const retxCanvas =
+        getChartCanvas("retransmission");
+
+    if (retxCanvas) {
+        createLineChart(
+            retxCanvas,
+            "retransmission",
+            chartData.labels,
+            [
+                {
+                    label: "DL Retransmission (%)",
+                    data: chartData.dlRetx,
+                    tension: 0.25,
+                    spanGaps: true
+                },
+                {
+                    label: "UL Retransmission (%)",
+                    data: chartData.ulRetx,
+                    tension: 0.25,
+                    spanGaps: true
+                }
+            ]
+        );
+    }
+
+    /*
+     * Packet Loss
+     */
+
+    const lossCanvas =
+        getChartCanvas("loss");
+
+    if (lossCanvas) {
+        createLineChart(
+            lossCanvas,
+            "loss",
+            chartData.labels,
+            [
+                {
+                    label: "DL Packet Loss (%)",
+                    data: chartData.dlLoss,
+                    tension: 0.25,
+                    spanGaps: true
+                },
+                {
+                    label: "UL Packet Loss (%)",
+                    data: chartData.ulLoss,
+                    tension: 0.25,
+                    spanGaps: true
+                }
+            ]
+        );
+    }
+
+    /*
+     * Delay
+     */
+
+    const delayCanvas =
+        getChartCanvas("delay");
+
+    if (delayCanvas) {
+        createLineChart(
+            delayCanvas,
+            "delay",
+            chartData.labels,
+            [
+                {
+                    label: "E2E Delay (ms)",
+                    data: chartData.e2e,
+                    tension: 0.25,
+                    spanGaps: true
+                },
+                {
+                    label: "SYN ACK-ACK (ms)",
+                    data: chartData.synAckAck,
+                    tension: 0.25,
+                    spanGaps: true
+                },
+                {
+                    label: "SYN-SYN ACK (ms)",
+                    data: chartData.synSynAck,
+                    tension: 0.25,
+                    spanGaps: true
+                }
+            ]
+        );
+    }
+}
+
+/* =========================================================
+   COMPARISON
+   ========================================================= */
+
+function shiftDate(date, days) {
+    const d = new Date(date);
+
+    d.setDate(
+        d.getDate() + days
+    );
+
+    return d;
+}
+
+function getSelectedRange() {
+    const {
+        from,
+        to
+    } = getDateRange();
+
+    if (!from || !to) {
+        return null;
+    }
+
+    return {
+        from,
+        to
+    };
+}
+
+function getComparisonRange() {
+    const range = getSelectedRange();
+
+    if (!range) {
+        return null;
+    }
+
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+
+    const diff =
+        Math.round(
+            (
+                to.getTime() -
+                from.getTime()
+            ) /
+            86400000
+        ) + 1;
+
+    if (compareMode === "lastWeek") {
+        return {
+            from: shiftDate(from, -7),
+            to: shiftDate(to, -7)
+        };
+    }
+
+    return {
+        from: shiftDate(from, -diff),
+        to: shiftDate(to, -diff)
+    };
 }
 
 function getComparisonRows() {
-  if (!$("compare")?.checked) {
-    return [];
-  }
+    const comparisonRange =
+        getComparisonRange();
 
-  const mode = $("compareMode")?.value || "lastWeek";
-
-  const baseRows = getFilteredRows();
-
-  if (!baseRows.length) return [];
-
-  const dates = baseRows
-    .map((row) => row.__date)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (!dates.length) return [];
-
-  const from = dates[0];
-  const to = dates[dates.length - 1];
-
-  let comparisonFrom;
-  let comparisonTo;
-
-  if (mode === "lastWeek") {
-    comparisonFrom = new Date(
-      from.getTime() - 7 * 24 * 60 * 60 * 1000
-    );
-
-    comparisonTo = new Date(
-      to.getTime() - 7 * 24 * 60 * 60 * 1000
-    );
-  } else {
-    const duration =
-      to.getTime() -
-      from.getTime();
-
-    comparisonTo = new Date(
-      from.getTime() - 1
-    );
-
-    comparisonFrom = new Date(
-      comparisonTo.getTime() - duration
-    );
-  }
-
-  const region = $("region")?.value || "ALL";
-  const circle = $("circle")?.value || "ALL";
-  const branch = $("branch")?.value || "ALL";
-  const kabupaten = $("kabupaten")?.value || "ALL";
-
-  return rows.filter((row) => {
-    if (!row.__date) return false;
-
-    if (
-      row.__date < comparisonFrom ||
-      row.__date > comparisonTo
-    ) {
-      return false;
+    if (!comparisonRange) {
+        return [];
     }
 
-    if (
-      region !== "ALL" &&
-      String(row.REGION).trim() !== region
-    ) {
-      return false;
-    }
+    const {
+        region,
+        circle,
+        branch,
+        kabupaten
+    } = getFilterElements();
 
-    if (
-      circle !== "ALL" &&
-      String(row.CIRCLE).trim() !== circle
-    ) {
-      return false;
-    }
+    return rows.filter(row => {
+        if (
+            region?.value &&
+            row.__region !== region.value
+        ) {
+            return false;
+        }
 
-    if (
-      branch !== "ALL" &&
-      String(row.BRANCH).trim() !== branch
-    ) {
-      return false;
-    }
+        if (
+            circle?.value &&
+            row.__circle !== circle.value
+        ) {
+            return false;
+        }
 
-    if (
-      kabupaten !== "ALL" &&
-      String(row.KABUPATEN).trim() !== kabupaten
-    ) {
-      return false;
-    }
+        if (
+            branch?.value &&
+            row.__branch !== branch.value
+        ) {
+            return false;
+        }
 
-    return true;
-  });
+        if (
+            kabupaten?.value &&
+            row.__kabupaten !== kabupaten.value
+        ) {
+            return false;
+        }
+
+        return (
+            row.__date >= comparisonRange.from &&
+            row.__date <= comparisonRange.to
+        );
+    });
 }
 
 /* =========================================================
-   KPI
+   COMPARISON KPI
    ========================================================= */
 
-function calculateAverage(inputRows, spec) {
-  const values = inputRows
-    .map((row) => metricValue(row, spec))
-    .filter(
-      (value) =>
-        value !== null &&
-        Number.isFinite(value)
-    );
-
-  if (!values.length) return null;
-
-  if (spec.agg === "sum") {
-    return values.reduce(
-      (sum, value) => sum + value,
-      0
-    );
-  }
-
-  return (
-    values.reduce(
-      (sum, value) => sum + value,
-      0
-    ) / values.length
-  );
-}
-
-function getKpiComparisonValue(inputRows, spec) {
-  if (!inputRows.length) return null;
-
-  return calculateAverage(inputRows, spec);
-}
-
-function renderKpis() {
-  const container = $("kpis");
-
-  if (!container) return;
-
-  const filtered = getFilteredRows();
-  const comparison = getComparisonRows();
-
-  container.innerHTML = "";
-
-  specs.forEach((spec) => {
-    const value = calculateAverage(filtered, spec);
-    const compareValue = getKpiComparisonValue(
-      comparison,
-      spec
-    );
-
-    let deltaHtml = "";
-
-    if (
-      $("compare")?.checked &&
-      value !== null &&
-      compareValue !== null &&
-      compareValue !== 0
-    ) {
-      const delta =
-        ((value - compareValue) /
-          Math.abs(compareValue)) *
-        100;
-
-      const arrow =
-        delta > 0
-          ? "▲"
-          : delta < 0
-          ? "▼"
-          : "—";
-
-      deltaHtml = `
-        <div class="kpi-delta">
-          ${arrow} ${Math.abs(delta).toFixed(1)}%
-          <span>vs compare</span>
-        </div>
-      `;
+function renderComparison(sourceRows) {
+    if (!compareEnabled) {
+        return;
     }
 
-    const card = document.createElement("div");
+    const comparisonRows =
+        getComparisonRows();
 
-    card.className = "kpi-card";
-    card.style.setProperty("--accent", spec.color);
-
-    card.innerHTML = `
-      <div class="kpi-top">
-        <span class="kpi-dot"></span>
-        <span>${escapeHtml(spec.label)}</span>
-      </div>
-
-      <div class="kpi-value">
-        ${
-          value === null
-            ? "-"
-            : formatNumber(value, spec.decimals)
-        }
-        <small>${escapeHtml(spec.unit)}</small>
-      </div>
-
-      ${deltaHtml}
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-/* =========================================================
-   CHARTS
-   ========================================================= */
-
-function destroyCharts() {
-  Object.values(charts).forEach((chart) => {
-    try {
-      chart.destroy();
-    } catch (error) {}
-  });
-
-  charts = {};
-}
-
-function chartTitle(spec) {
-  return `${spec.label} (${spec.unit})`;
-}
-
-function renderCharts() {
-  const container = $("charts");
-
-  if (!container) return;
-
-  destroyCharts();
-
-  container.innerHTML = "";
-
-  const filtered = getFilteredRows();
-  const comparison = getComparisonRows();
-
-  const period = $("period")?.value || "15min";
-
-  const aggregated = aggregateRows(
-    filtered,
-    period
-  );
-
-  const comparisonAggregated =
-    aggregateRows(
-      comparison,
-      period
-    );
-
-  if (!aggregated.length) {
-    container.innerHTML = `
-      <div class="chart-card empty-chart">
-        <div class="empty-title">No data</div>
-        <div class="empty-text">
-          Tidak ada data sesuai filter yang dipilih.
-        </div>
-      </div>
-    `;
-
-    return;
-  }
-
-  specs.forEach((spec) => {
-    const card = document.createElement("div");
-
-    card.className = "chart-card";
-
-    card.innerHTML = `
-      <div class="chart-head">
-        <div>
-          <h3>${escapeHtml(spec.label)}</h3>
-          <span>${escapeHtml(spec.unit)}</span>
-        </div>
-      </div>
-
-      <div class="chart-body">
-        <canvas></canvas>
-      </div>
-    `;
-
-    container.appendChild(card);
-
-    const canvas = card.querySelector("canvas");
-
-    const labels = aggregated.map(
-      (item) =>
-        spec.key === "traffic" &&
-        period === "daily"
-          ? item.date.toLocaleDateString(
-              "id-ID",
-              {
-                day: "2-digit",
-                month: "2-digit"
-              }
-            )
-          : period === "daily"
-          ? item.date.toLocaleDateString(
-              "id-ID",
-              {
-                day: "2-digit",
-                month: "2-digit"
-              }
-            )
-          : item.date.toLocaleTimeString(
-              "id-ID",
-              {
-                hour: "2-digit",
-                minute: "2-digit"
-              }
-            )
-    );
-
-    const datasets = [
-      {
-        label: "Current",
-        data: aggregated.map(
-          (item) => item[spec.key]
-        ),
-        borderColor: spec.color,
-        backgroundColor: "transparent",
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.25,
-        spanGaps: true
-      }
-    ];
-
-    if (
-      $("compare")?.checked &&
-      comparisonAggregated.length
-    ) {
-      datasets.push({
-        label:
-          $("compareMode")?.value ===
-          "lastWeek"
-            ? "Last Week"
-            : "Previous Period",
-        data: comparisonAggregated.map(
-          (item) => item[spec.key]
-        ),
-        borderColor: "#65788b",
-        backgroundColor: "transparent",
-        borderWidth: 1.5,
-        borderDash: [5, 5],
-        pointRadius: 0,
-        tension: 0.25,
-        spanGaps: true
-      });
+    if (!comparisonRows.length) {
+        return;
     }
 
-    charts[spec.key] = new Chart(
-      canvas.getContext("2d"),
-      {
-        type: "line",
-        data: {
-          labels,
-          datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-          plugins: {
-            legend: {
-              display:
-                $("compare")?.checked || false,
-              labels: {
-                color: "#79a7ca",
-                boxWidth: 10,
-                usePointStyle: true
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: (context) => {
-                  const value =
-                    context.parsed.y;
+    const current =
+        calculateKpis(sourceRows);
 
-                  return `${context.dataset.label}: ${
-                    value === null
-                      ? "-"
-                      : formatNumber(
-                          value,
-                          spec.decimals
-                        )
-                  } ${spec.unit}`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: {
-                color: "#79a7ca",
-                maxTicksLimit: 8
-              },
-              grid: {
-                color: "rgba(7,61,102,.35)"
-              }
-            },
-            y: {
-              beginAtZero: false,
-              ticks: {
-                color: "#79a7ca",
-                callback: (value) =>
-                  formatNumber(
-                    value,
-                    spec.decimals
-                  )
-              },
-              grid: {
-                color: "rgba(7,61,102,.35)"
-              }
-            }
-          }
+    const previous =
+        calculateKpis(comparisonRows);
+
+    const cards =
+        $$(".kpi-card");
+
+    cards.forEach(card => {
+        const metric =
+            card.dataset.metric;
+
+        if (!metric) {
+            return;
         }
-      }
-    );
-  });
+
+        const currentValue =
+            numberValue(current[metric]);
+
+        const previousValue =
+            numberValue(previous[metric]);
+
+        if (
+            currentValue === null ||
+            previousValue === null ||
+            previousValue === 0
+        ) {
+            return;
+        }
+
+        const change =
+            (
+                (
+                    currentValue -
+                    previousValue
+                ) /
+                Math.abs(previousValue)
+            ) * 100;
+
+        let comparison =
+            card.querySelector(".kpi-comparison");
+
+        if (!comparison) {
+            comparison =
+                document.createElement("div");
+
+            comparison.className =
+                "kpi-comparison";
+
+            card.appendChild(comparison);
+        }
+
+        comparison.textContent =
+            `${change >= 0 ? "+" : ""}${change.toFixed(2)}% vs previous`;
+    });
 }
 
 /* =========================================================
    TABLE
    ========================================================= */
 
-function renderTable() {
-  const head = $("tableHead");
-  const body = $("tableBody");
+function renderTable(sourceRows) {
+    const head =
+        $("#tableHead");
 
-  if (!head || !body) return;
+    const body =
+        $("#tableBody");
 
-  const filtered = getFilteredRows()
-    .sort(
-      (a, b) =>
-        (b.__date || 0) -
-        (a.__date || 0)
-    )
-    .slice(0, 500);
+    if (!head || !body) {
+        return;
+    }
 
-  const columns = [
-    "15 Minutes",
-    "REGION",
-    "CIRCLE",
-    "BRANCH",
-    "KABUPATEN",
-    "Total Traffic(Byte)",
-    "Downlink TCP Retransmission Rate(%)",
-    "Uplink TCP Retransmission Rate(%)",
-    "TCP Connection Success Rate (Included RST)(%)",
-    "Downlink TCP Packet Loss Rate(%)",
-    "Uplink TCP Packet Loss Rate(%)",
-    "E2E Delay(ms)",
-    "SYN ACK-ACK Delay(ms)",
-    "SYN-SYN ACK Delay(ms)"
-  ];
+    const data =
+        aggregateRows(
+            sourceRows,
+            currentPeriod
+        );
 
-  head.innerHTML = `
-    <tr>
-      ${columns
-        .map(
-          (column) =>
-            `<th>${escapeHtml(
-              column
-            )}</th>`
-        )
-        .join("")}
-    </tr>
-  `;
+    currentTableRows = data;
 
-  body.innerHTML = "";
-
-  if (!filtered.length) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="${columns.length}" class="empty-cell">
-          No data found.
-        </td>
-      </tr>
+    head.innerHTML = `
+        <tr>
+            <th>Date / Time</th>
+            <th>Traffic</th>
+            <th>DL Retx</th>
+            <th>UL Retx</th>
+            <th>TCP Success</th>
+            <th>DL Loss</th>
+            <th>UL Loss</th>
+            <th>E2E</th>
+            <th>SYN ACK-ACK</th>
+            <th>SYN-SYN ACK</th>
+        </tr>
     `;
 
-    return;
-  }
+    if (!data.length) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="10">
+                    No data
+                </td>
+            </tr>
+        `;
 
-  filtered.forEach((row) => {
-    const tr = document.createElement("tr");
+        return;
+    }
 
-    tr.innerHTML = columns
-      .map((column) => {
-        let value = row[column];
+    body.innerHTML = data.map(item => `
+        <tr>
+            <td>
+                ${escapeHtml(
+                    formatDateTime(item.date)
+                )}
+            </td>
 
-        if (column === "15 Minutes") {
-          value = formatDateDisplay(
-            row.__date
-          );
-        }
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.traffic, 2)
+                )}
+            </td>
 
-        if (
-          column === "Total Traffic(Byte)"
-        ) {
-          value =
-            trafficGB(row) === null
-              ? "-"
-              : formatNumber(
-                  trafficGB(row),
-                  6
-                );
-        }
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.dlRetx, 2)
+                )}%
+            </td>
 
-        return `<td>${escapeHtml(
-          value ?? "-"
-        )}</td>`;
-      })
-      .join("");
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.ulRetx, 2)
+                )}%
+            </td>
 
-    body.appendChild(tr);
-  });
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.tcp, 2)
+                )}%
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.dlLoss, 2)
+                )}%
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.ulLoss, 2)
+                )}%
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.e2e, 2)
+                )} ms
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.synAckAck, 2)
+                )} ms
+            </td>
+
+            <td>
+                ${escapeHtml(
+                    formatNumber(item.synSynAck, 2)
+                )} ms
+            </td>
+        </tr>
+    `).join("");
 }
 
 /* =========================================================
    DATA PAGE
    ========================================================= */
 
-function renderDataPage() {
-  const head = $("dataHead");
-  const body = $("dataBody");
-  const search = $("dataSearch");
-  const count = $("dataCount");
+function renderDataPage(sourceRows = rows) {
+    const head =
+        $("#dataHead");
 
-  if (!head || !body) return;
+    const body =
+        $("#dataBody");
 
-  const columns = [
-    "15 Minutes",
-    "REGION",
-    "CIRCLE",
-    "BRANCH",
-    "KABUPATEN",
-    "Total Traffic(Byte)",
-    "Downlink TCP Retransmission Rate(%)",
-    "Uplink TCP Retransmission Rate(%)",
-    "TCP Connection Success Rate (Included RST)(%)",
-    "Downlink TCP Packet Loss Rate(%)",
-    "Uplink TCP Packet Loss Rate(%)",
-    "E2E Delay(ms)",
-    "SYN ACK-ACK Delay(ms)",
-    "SYN-SYN ACK Delay(ms)"
-  ];
+    const count =
+        $("#dataCount");
 
-  head.innerHTML = `
-    <tr>
-      ${columns
-        .map(
-          (column) =>
-            `<th>${escapeHtml(
-              column
-            )}</th>`
-        )
-        .join("")}
-    </tr>
-  `;
-
-  let dataRows = [...rows];
-
-  const searchValue =
-    String(search?.value || "")
-      .trim()
-      .toLowerCase();
-
-  if (searchValue) {
-    dataRows = dataRows.filter(
-      (row) =>
-        columns.some((column) =>
-          String(
-            row[column] ?? ""
-          )
-            .toLowerCase()
-            .includes(searchValue)
-        )
-    );
-  }
-
-  dataRows.sort(
-    (a, b) =>
-      (b.__date || 0) -
-      (a.__date || 0)
-  );
-
-  const displayRows =
-    dataRows.slice(0, 1000);
-
-  body.innerHTML = "";
-
-  displayRows.forEach((row) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = columns
-      .map((column) => {
-        let value = row[column];
-
-        if (column === "15 Minutes") {
-          value = formatDateDisplay(
-            row.__date
-          );
-        }
-
-        if (
-          column === "Total Traffic(Byte)"
-        ) {
-          value =
-            trafficGB(row) === null
-              ? "-"
-              : formatNumber(
-                  trafficGB(row),
-                  6
-                );
-        }
-
-        return `<td>${escapeHtml(
-          value ?? "-"
-        )}</td>`;
-      })
-      .join("");
-
-    body.appendChild(tr);
-  });
-
-  if (count) {
-    count.textContent =
-      `${dataRows.length.toLocaleString(
-        "id-ID"
-      )} records`;
-  }
-}
-
-/* =========================================================
-   MAP / TOPOLOGY
-   ========================================================= */
-
-function getMapFilteredRows() {
-  const search =
-    String(
-      $("mapSearch")?.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  return rows.filter((row) => {
-    if (!search) return true;
-
-    return [
-      row.REGION,
-      row.CIRCLE,
-      row.BRANCH,
-      row.KABUPATEN
-    ].some((value) =>
-      String(value || "")
-        .toLowerCase()
-        .includes(search)
-    );
-  });
-}
-
-function getMapField() {
-  if (activeMap === "circle") {
-    return "CIRCLE";
-  }
-
-  if (activeMap === "branch") {
-    return "BRANCH";
-  }
-
-  if (activeMap === "kabupaten") {
-    return "KABUPATEN";
-  }
-
-  return "REGION";
-}
-
-function renderMap() {
-  const list = $("mapList");
-  const topology = $("topologyCanvas");
-  const performance =
-    $("regionPerformance");
-
-  if (!list) return;
-
-  const filtered =
-    getMapFilteredRows();
-
-  const field = getMapField();
-
-  const groups = new Map();
-
-  filtered.forEach((row) => {
-    const name =
-      String(
-        row[field] || "Unknown"
-      ).trim();
-
-    if (!groups.has(name)) {
-      groups.set(name, []);
+    if (!head || !body) {
+        return;
     }
 
-    groups.get(name).push(row);
-  });
+    currentDataRows =
+        sourceRows.slice();
 
-  const sortedGroups =
-    [...groups.entries()]
-      .sort(
-        (a, b) =>
-          b[1].length -
-          a[1].length
-      )
-      .slice(0, 100);
+    const columns = [
+        COLUMNS.date,
+        COLUMNS.region,
+        COLUMNS.branch,
+        COLUMNS.kabupaten,
+        COLUMNS.circle,
+        COLUMNS.traffic,
+        COLUMNS.dlRetx,
+        COLUMNS.ulRetx,
+        COLUMNS.tcp,
+        COLUMNS.dlLoss,
+        COLUMNS.ulLoss,
+        COLUMNS.e2e,
+        COLUMNS.synAckAck,
+        COLUMNS.synSynAck
+    ];
 
-  list.innerHTML = "";
+    head.innerHTML = `
+        <tr>
+            ${columns.map(column => `
+                <th>${escapeHtml(column)}</th>
+            `).join("")}
+        </tr>
+    `;
 
-  if (!sortedGroups.length) {
-    list.innerHTML =
-      `<div class="empty-cell">No data.</div>`;
-  }
-
-  sortedGroups.forEach(
-    ([name, groupRows]) => {
-      const item =
-        document.createElement("div");
-
-      item.className = "map-item";
-
-      const latest =
-        groupRows
-          .filter((row) => row.__date)
-          .sort(
-            (a, b) =>
-              b.__date - a.__date
-          )[0];
-
-      const tcpSpec =
-        specs.find(
-          (spec) =>
-            spec.key === "tcp"
-        );
-
-      const tcpValue = latest
-        ? metricValue(
-            latest,
-            tcpSpec
-          )
-        : null;
-
-      item.innerHTML = `
-        <div class="map-item-name">
-          ${escapeHtml(name)}
-        </div>
-        <div class="map-item-meta">
-          ${groupRows.length.toLocaleString(
-            "id-ID"
-          )} records
-          ${
-            tcpValue !== null
-              ? ` · TCP ${formatNumber(
-                  tcpValue,
-                  2
-                )}%`
-              : ""
-          }
-        </div>
-      `;
-
-      list.appendChild(item);
-    }
-  );
-
-  if (performance) {
-    const regions =
-      new Map();
-
-    rows.forEach((row) => {
-      const region =
-        String(
-          row.REGION ||
-            "Unknown"
-        ).trim();
-
-      if (!regions.has(region)) {
-        regions.set(region, []);
-      }
-
-      regions.get(region).push(row);
-    });
-
-    performance.innerHTML =
-      [...regions.entries()]
-        .sort((a, b) =>
-          a[0].localeCompare(b[0])
-        )
-        .map(
-          ([region, regionRows]) => {
-            const tcpSpec =
-              specs.find(
-                (spec) =>
-                  spec.key ===
-                  "tcp"
-              );
-
-            const tcp =
-              calculateAverage(
-                regionRows,
-                tcpSpec
-              );
-
-            return `
-              <div class="performance-row">
-                <span>${escapeHtml(
-                  region
-                )}</span>
-                <b>${
-                  tcp === null
-                    ? "-"
-                    : formatNumber(
-                        tcp,
-                        2
-                      ) + "%"
-                }</b>
-              </div>
-            `;
-          }
-        )
-        .join("");
-  }
-
-  if (topology) {
-    renderTopology(
-      topology,
-      sortedGroups
-    );
-  }
-}
-
-function renderTopology(
-  container,
-  groups
-) {
-  container.innerHTML = "";
-
-  const maxNodes = Math.min(
-    groups.length,
-    20
-  );
-
-  if (!maxNodes) {
-    container.innerHTML =
-      `<div class="empty-cell">No topology data.</div>`;
-    return;
-  }
-
-  const fragment =
-    document.createDocumentFragment();
-
-  groups
-    .slice(0, maxNodes)
-    .forEach(
-      ([name, groupRows], index) => {
-        const node =
-          document.createElement(
-            "div"
-          );
-
-        node.className =
-          "topology-node";
-
-        const angle =
-          (index / maxNodes) *
-          Math.PI *
-          2;
-
-        const radius =
-          Math.min(
-            240,
-            Math.max(
-              130,
-              maxNodes * 10
-            )
-          );
-
-        const centerX = 50;
-        const centerY = 50;
-
-        const x =
-          centerX +
-          Math.cos(angle) *
-            (radius / 6);
-
-        const y =
-          centerY +
-          Math.sin(angle) *
-            (radius / 8);
-
-        node.style.left =
-          `${x}%`;
-
-        node.style.top =
-          `${y}%`;
-
-        node.innerHTML = `
-          <span class="node-dot"></span>
-          <b>${escapeHtml(
-            name
-          )}</b>
-          <small>${groupRows.length.toLocaleString(
-            "id-ID"
-          )} records</small>
+    if (!sourceRows.length) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="${columns.length}">
+                    No data
+                </td>
+            </tr>
         `;
 
-        fragment.appendChild(
-          node
-        );
-      }
-    );
+        if (count) {
+            count.textContent = "0 rows";
+        }
 
-  container.appendChild(
-    fragment
-  );
+        return;
+    }
 
-  const core =
-    document.createElement("div");
+    /*
+     * Limit rendering to 5000 rows
+     * to keep browser responsive.
+     */
 
-  core.className =
-    "topology-core";
+    const displayRows =
+        sourceRows.slice(0, 5000);
 
-  core.innerHTML = `
-    <span class="core-dot"></span>
-    <b>SQM</b>
-    <small>MONITORING</small>
-  `;
+    body.innerHTML =
+        displayRows.map(row => `
+            <tr>
+                ${columns.map(column => `
+                    <td>
+                        ${escapeHtml(
+                            row[column] ?? ""
+                        )}
+                    </td>
+                `).join("")}
+            </tr>
+        `).join("");
 
-  container.appendChild(core);
+    if (count) {
+        count.textContent =
+            `${sourceRows.length.toLocaleString()} rows`;
+    }
 }
 
 /* =========================================================
-   DOWNLOAD
+   DATA SEARCH
+   ========================================================= */
+
+function setupDataSearch() {
+    const search =
+        $("#dataSearch");
+
+    if (!search) {
+        return;
+    }
+
+    search.addEventListener(
+        "input",
+        () => {
+            const keyword =
+                search.value
+                    .trim()
+                    .toLowerCase();
+
+            if (!keyword) {
+                renderDataPage(rows);
+                return;
+            }
+
+            const result =
+                rows.filter(row =>
+                    Object.values(row)
+                        .some(value =>
+                            String(value ?? "")
+                                .toLowerCase()
+                                .includes(keyword)
+                        )
+                );
+
+            renderDataPage(result);
+        }
+    );
+}
+
+/* =========================================================
+   MAP / REGION PERFORMANCE
+   ========================================================= */
+
+function renderRegionPerformance(sourceRows) {
+    const container =
+        $("#regionPerformance");
+
+    if (!container) {
+        return;
+    }
+
+    const groups = new Map();
+
+    sourceRows.forEach(row => {
+        const region =
+            row.__region || "UNKNOWN";
+
+        if (!groups.has(region)) {
+            groups.set(region, []);
+        }
+
+        groups.get(region).push(row);
+    });
+
+    const result = [];
+
+    groups.forEach((regionRows, region) => {
+        const kpi =
+            calculateKpis(regionRows);
+
+        result.push({
+            region,
+            rows: regionRows.length,
+            traffic: kpi.traffic,
+            tcp: kpi.tcp,
+            dlLoss: kpi.dlLoss,
+            ulLoss: kpi.ulLoss,
+            e2e: kpi.e2e
+        });
+    });
+
+    result.sort(
+        (a, b) =>
+            (b.traffic || 0) -
+            (a.traffic || 0)
+    );
+
+    if (!result.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                No region data
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = result.map(item => `
+        <div class="region-row">
+            <div class="region-name">
+                ${escapeHtml(item.region)}
+            </div>
+
+            <div class="region-metric">
+                <span>Traffic</span>
+                <strong>
+                    ${escapeHtml(
+                        formatNumber(
+                            item.traffic,
+                            2
+                        )
+                    )}
+                </strong>
+            </div>
+
+            <div class="region-metric">
+                <span>TCP</span>
+                <strong>
+                    ${escapeHtml(
+                        formatNumber(
+                            item.tcp,
+                            2
+                        )
+                    )}%
+                </strong>
+            </div>
+
+            <div class="region-metric">
+                <span>E2E</span>
+                <strong>
+                    ${escapeHtml(
+                        formatNumber(
+                            item.e2e,
+                            2
+                        )
+                    )} ms
+                </strong>
+            </div>
+        </div>
+    `).join("");
+}
+
+function renderMapList(sourceRows) {
+    const container =
+        $("#mapList");
+
+    if (!container) {
+        return;
+    }
+
+    const groups = new Map();
+
+    sourceRows.forEach(row => {
+        const region =
+            row.__region || "UNKNOWN";
+
+        if (!groups.has(region)) {
+            groups.set(region, 0);
+        }
+
+        groups.set(
+            region,
+            groups.get(region) + 1
+        );
+    });
+
+    const result =
+        [...groups.entries()]
+            .sort((a, b) =>
+                b[1] - a[1]
+            );
+
+    container.innerHTML =
+        result.map(([region, count]) => `
+            <div class="map-list-item">
+                <span>
+                    ${escapeHtml(region)}
+                </span>
+
+                <strong>
+                    ${count.toLocaleString()}
+                </strong>
+            </div>
+        `).join("");
+}
+
+/* =========================================================
+   TOPOLOGY
+   ========================================================= */
+
+function renderTopology(sourceRows) {
+    const canvas =
+        $("#topologyCanvas");
+
+    if (!canvas) {
+        return;
+    }
+
+    const ctx =
+        canvas.getContext("2d");
+
+    if (!ctx) {
+        return;
+    }
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    const width =
+        Math.max(
+            300,
+            Math.floor(rect.width || 900)
+        );
+
+    const height =
+        Math.max(
+            300,
+            Math.floor(rect.height || 500)
+        );
+
+    const dpr =
+        window.devicePixelRatio || 1;
+
+    canvas.width =
+        width * dpr;
+
+    canvas.height =
+        height * dpr;
+
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+    const regions =
+        uniqueSorted(
+            sourceRows.map(
+                row => row.__region
+            )
+        );
+
+    if (!regions.length) {
+        return;
+    }
+
+    const centerX =
+        width / 2;
+
+    const centerY =
+        height / 2;
+
+    const radius =
+        Math.min(width, height) *
+        0.33;
+
+    /*
+     * Center
+     */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        centerX,
+        centerY,
+        40,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+        "#162333";
+
+    ctx.fill();
+
+    ctx.strokeStyle =
+        "#3c78a8";
+
+    ctx.stroke();
+
+    ctx.fillStyle =
+        "#e8eef7";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.textBaseline =
+        "middle";
+
+    ctx.font =
+        "bold 13px Arial";
+
+    ctx.fillText(
+        "SQM",
+        centerX,
+        centerY
+    );
+
+    regions.forEach(
+        (region, index) => {
+            const angle =
+                (
+                    index /
+                    regions.length
+                ) *
+                Math.PI *
+                2 -
+                Math.PI / 2;
+
+            const x =
+                centerX +
+                Math.cos(angle) *
+                radius;
+
+            const y =
+                centerY +
+                Math.sin(angle) *
+                radius;
+
+            /*
+             * Line
+             */
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                centerX,
+                centerY
+            );
+
+            ctx.lineTo(
+                x,
+                y
+            );
+
+            ctx.strokeStyle =
+                "rgba(100,140,180,.35)";
+
+            ctx.stroke();
+
+            /*
+             * Node
+             */
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                25,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fillStyle =
+                "#101b28";
+
+            ctx.fill();
+
+            ctx.strokeStyle =
+                "#4d7da5";
+
+            ctx.stroke();
+
+            /*
+             * Text
+             */
+
+            ctx.fillStyle =
+                "#dce8f5";
+
+            ctx.font =
+                "11px Arial";
+
+            ctx.textAlign =
+                "center";
+
+            ctx.textBaseline =
+                "middle";
+
+            const label =
+                region.length > 18
+                    ? region.slice(0, 16) + "..."
+                    : region;
+
+            ctx.fillText(
+                label,
+                x,
+                y
+            );
+        }
+    );
+
+    topologyInitialized = true;
+}
+
+/* =========================================================
+   CSV DOWNLOAD
    ========================================================= */
 
 function csvEscape(value) {
-  const text = String(
-    value ?? ""
-  );
+    const text =
+        String(value ?? "");
 
-  if (
-    text.includes(",") ||
-    text.includes('"') ||
-    text.includes("\n")
-  ) {
-    return (
-      '"' +
-      text.replace(
-        /"/g,
-        '""'
-      ) +
-      '"'
-    );
-  }
+    if (
+        text.includes(",") ||
+        text.includes('"') ||
+        text.includes("\n")
+    ) {
+        return `"${text.replace(
+            /"/g,
+            '""'
+        )}"`;
+    }
 
-  return text;
+    return text;
 }
 
-function rowsToCsv(inputRows) {
-  const columns = [
-    "15 Minutes",
-    "REGION",
-    "BRANCH",
-    "KABUPATEN",
-    "CIRCLE",
-    "Total Traffic(Byte)",
-    "Downlink TCP Retransmission Rate(%)",
-    "Uplink TCP Retransmission Rate(%)",
-    "TCP Connection Success Rate (Included RST)(%)",
-    "Downlink TCP Packet Loss Rate(%)",
-    "Uplink TCP Packet Loss Rate(%)",
-    "E2E Delay(ms)",
-    "SYN ACK-ACK Delay(ms)",
-    "SYN-SYN ACK Delay(ms)"
-  ];
+function rowsToCsv(sourceRows) {
+    const columns = [
+        COLUMNS.date,
+        COLUMNS.region,
+        COLUMNS.branch,
+        COLUMNS.kabupaten,
+        COLUMNS.circle,
+        COLUMNS.traffic,
+        COLUMNS.dlRetx,
+        COLUMNS.ulRetx,
+        COLUMNS.tcp,
+        COLUMNS.dlLoss,
+        COLUMNS.ulLoss,
+        COLUMNS.e2e,
+        COLUMNS.synAckAck,
+        COLUMNS.synSynAck
+    ];
 
-  const lines = [];
+    const lines = [];
 
-  lines.push(
-    columns
-      .map(csvEscape)
-      .join(",")
-  );
-
-  inputRows.forEach((row) => {
     lines.push(
-      columns
-        .map((column) =>
-          csvEscape(
-            row[column]
-          )
-        )
-        .join(",")
+        columns.map(csvEscape).join(",")
     );
-  });
 
-  return lines.join("\n");
+    sourceRows.forEach(row => {
+        lines.push(
+            columns
+                .map(column =>
+                    csvEscape(
+                        row[column]
+                    )
+                )
+                .join(",")
+        );
+    });
+
+    return lines.join("\r\n");
 }
 
-function downloadRows(
-  inputRows,
-  filename
+function downloadCsvFile(
+    sourceRows,
+    filename = "sqm_filtered_data.csv"
 ) {
-  if (!inputRows.length) {
-    alert(
-      "Tidak ada data untuk di-download."
-    );
-    return;
-  }
+    const csv =
+        rowsToCsv(sourceRows);
 
-  const csv =
-    rowsToCsv(inputRows);
+    const blob =
+        new Blob(
+            [csv],
+            {
+                type:
+                    "text/csv;charset=utf-8;"
+            }
+        );
 
-  const blob =
-    new Blob(
-      [csv],
-      {
-        type:
-          "text/csv;charset=utf-8;"
-      }
-    );
+    const url =
+        URL.createObjectURL(blob);
 
-  const url =
-    URL.createObjectURL(blob);
+    const link =
+        document.createElement("a");
 
-  const link =
-    document.createElement(
-      "a"
-    );
+    link.href = url;
+    link.download = filename;
 
-  link.href = url;
-  link.download =
-    filename;
+    document.body.appendChild(link);
 
-  document.body.appendChild(
-    link
-  );
+    link.click();
 
-  link.click();
+    link.remove();
 
-  link.remove();
-
-  URL.revokeObjectURL(
-    url
-  );
-}
-
-function setupDownloads() {
-  $("downloadCsv")?.addEventListener(
-    "click",
-    () => {
-      const filtered =
-        getFilteredRows();
-
-      downloadRows(
-        filtered,
-        "sqm_filtered_data.csv"
-      );
-    }
-  );
-
-  $("downloadCsv2")?.addEventListener(
-    "click",
-    () => {
-      downloadRows(
-        rows,
-        "sqm_raw_data.csv"
-      );
-    }
-  );
+    URL.revokeObjectURL(url);
 }
 
 /* =========================================================
@@ -1810,463 +2650,888 @@ function setupDownloads() {
    ========================================================= */
 
 function setupNavigation() {
-  const buttons =
-    document.querySelectorAll(
-      ".nav-btn"
-    );
+    const navButtons =
+        $$(".nav-btn");
 
-  buttons.forEach((button) => {
-    button.addEventListener(
-      "click",
-      () => {
-        const view =
-          button.dataset.view;
+    const views =
+        $$(".view");
 
-        buttons.forEach(
-          (item) =>
-            item.classList.remove(
-              "active"
-            )
+    navButtons.forEach(button => {
+        button.addEventListener(
+            "click",
+            () => {
+                const target =
+                    button.dataset.target ||
+                    button.dataset.view;
+
+                if (!target) {
+                    return;
+                }
+
+                navButtons.forEach(btn =>
+                    btn.classList.remove(
+                        "active"
+                    )
+                );
+
+                button.classList.add(
+                    "active"
+                );
+
+                views.forEach(view => {
+                    view.classList.remove(
+                        "active"
+                    );
+
+                    if (
+                        view.id === target ||
+                        view.dataset.view === target
+                    ) {
+                        view.classList.add(
+                            "active"
+                        );
+                    }
+                });
+
+                if (
+                    target === "mapView" ||
+                    target === "map"
+                ) {
+                    setTimeout(() => {
+                        renderTopology(
+                            filteredRows
+                        );
+                    }, 100);
+                }
+
+                if (
+                    target === "dataView" ||
+                    target === "data"
+                ) {
+                    renderDataPage(
+                        filteredRows
+                    );
+                }
+            }
         );
-
-        button.classList.add(
-          "active"
-        );
-
-        document
-          .querySelectorAll(
-            ".view"
-          )
-          .forEach((section) => {
-            section.classList.remove(
-              "active-view"
-            );
-          });
-
-        if (view === "dashboard") {
-          $("dashboardView")?.classList.add(
-            "active-view"
-          );
-        }
-
-        if (view === "map") {
-          $("mapView")?.classList.add(
-            "active-view"
-          );
-
-          renderMap();
-        }
-
-        if (view === "data") {
-          $("dataView")?.classList.add(
-            "active-view"
-          );
-
-          renderDataPage();
-        }
-
-        if (view === "settings") {
-          $("settingsView")?.classList.add(
-            "active-view"
-          );
-        }
-      }
-    );
-  });
-
-  document
-    .querySelectorAll(
-      ".map-tab"
-    )
-    .forEach((button) => {
-      button.addEventListener(
-        "click",
-        () => {
-          document
-            .querySelectorAll(
-              ".map-tab"
-            )
-            .forEach(
-              (item) =>
-                item.classList.remove(
-                  "active"
-                )
-            );
-
-          button.classList.add(
-            "active"
-          );
-
-          activeMap =
-            button.dataset.map ||
-            "region";
-
-          renderMap();
-        }
-      );
     });
 
-  $("mapSearch")?.addEventListener(
-    "input",
-    renderMap
-  );
+    /*
+     * Map tabs
+     */
 
-  $("dataSearch")?.addEventListener(
-    "input",
-    renderDataPage
-  );
+    $$(".map-tab").forEach(tab => {
+        tab.addEventListener(
+            "click",
+            () => {
+                $$(".map-tab").forEach(
+                    item =>
+                        item.classList.remove(
+                            "active"
+                        )
+                );
+
+                tab.classList.add(
+                    "active"
+                );
+            }
+        );
+    });
+}
+
+/* =========================================================
+   FILTER EVENTS
+   ========================================================= */
+
+function setupFilters() {
+    const {
+        region,
+        circle,
+        branch,
+        kabupaten,
+        dateFrom,
+        dateTo,
+        period,
+        compare,
+        compareMode,
+        reset
+    } = getFilterElements();
+
+    /*
+     * Region
+     */
+
+    region?.addEventListener(
+        "change",
+        () => {
+            updateDependentFilters();
+
+            /*
+             * Preserve region after rebuilding.
+             */
+
+            if (region.value) {
+                const value =
+                    region.value;
+
+                setSelectOptions(
+                    region,
+                    uniqueSorted(
+                        rows.map(
+                            row =>
+                                row.__region
+                        )
+                    ),
+                    "All Regions"
+                );
+
+                region.value = value;
+            }
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Circle
+     */
+
+    circle?.addEventListener(
+        "change",
+        () => {
+            const selected =
+                circle.value;
+
+            updateDependentFilters();
+
+            if (
+                [...circle.options]
+                    .some(
+                        option =>
+                            option.value === selected
+                    )
+            ) {
+                circle.value =
+                    selected;
+            }
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Branch
+     */
+
+    branch?.addEventListener(
+        "change",
+        () => {
+            const selected =
+                branch.value;
+
+            updateDependentFilters();
+
+            if (
+                [...branch.options]
+                    .some(
+                        option =>
+                            option.value === selected
+                    )
+            ) {
+                branch.value =
+                    selected;
+            }
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Kabupaten
+     */
+
+    kabupaten?.addEventListener(
+        "change",
+        updateAll
+    );
+
+    /*
+     * Date
+     */
+
+    dateFrom?.addEventListener(
+        "change",
+        () => {
+            if (
+                dateFrom.value &&
+                dateTo?.value &&
+                dateFrom.value >
+                    dateTo.value
+            ) {
+                dateTo.value =
+                    dateFrom.value;
+            }
+
+            updateAll();
+        }
+    );
+
+    dateTo?.addEventListener(
+        "change",
+        () => {
+            if (
+                dateTo.value &&
+                dateFrom?.value &&
+                dateTo.value <
+                    dateFrom.value
+            ) {
+                dateFrom.value =
+                    dateTo.value;
+            }
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Period
+     */
+
+    period?.addEventListener(
+        "change",
+        () => {
+            currentPeriod =
+                normalizePeriod(
+                    period.value
+                );
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Compare
+     */
+
+    compare?.addEventListener(
+        "change",
+        () => {
+            compareEnabled =
+                compare.checked;
+
+            if (compareMode) {
+                compareMode.disabled =
+                    !compareEnabled;
+            }
+
+            updateAll();
+        }
+    );
+
+    compareMode?.addEventListener(
+        "change",
+        () => {
+            compareMode =
+                compareMode.value;
+
+            updateAll();
+        }
+    );
+
+    /*
+     * Reset
+     */
+
+    reset?.addEventListener(
+        "click",
+        resetFilters
+    );
+}
+
+/* =========================================================
+   PERIOD NORMALIZATION
+   ========================================================= */
+
+function normalizePeriod(value) {
+    const text =
+        String(value || "")
+            .toLowerCase()
+            .trim();
+
+    if (
+        text === "hour" ||
+        text === "hourly" ||
+        text === "1h"
+    ) {
+        return "hourly";
+    }
+
+    if (
+        text === "day" ||
+        text === "daily" ||
+        text === "1d"
+    ) {
+        return "daily";
+    }
+
+    return "15min";
+}
+
+/* =========================================================
+   RESET FILTERS
+   ========================================================= */
+
+function resetFilters() {
+    const {
+        region,
+        circle,
+        branch,
+        kabupaten,
+        dateFrom,
+        dateTo,
+        period,
+        compare,
+        compareMode
+    } = getFilterElements();
+
+    /*
+     * Clear hierarchy
+     */
+
+    if (region) {
+        region.value = "";
+    }
+
+    if (circle) {
+        circle.value = "";
+    }
+
+    if (branch) {
+        branch.value = "";
+    }
+
+    if (kabupaten) {
+        kabupaten.value = "";
+    }
+
+    /*
+     * Reset date
+     */
+
+    const {
+        min,
+        max
+    } = getMinMaxDate(rows);
+
+    if (dateFrom) {
+        dateFrom.value =
+            dateInputValue(min);
+    }
+
+    if (dateTo) {
+        dateTo.value =
+            dateInputValue(max);
+    }
+
+    /*
+     * Reset period
+     */
+
+    currentPeriod = "15min";
+
+    if (period) {
+        period.value = "15min";
+    }
+
+    /*
+     * Reset compare
+     */
+
+    compareEnabled = false;
+
+    if (compare) {
+        compare.checked = false;
+    }
+
+    if (compareMode) {
+        compareMode.disabled = true;
+        compareMode.value = "previous";
+    }
+
+    updateDependentFilters();
+
+    updateAll();
+}
+
+/* =========================================================
+   UPDATE ALL
+   ========================================================= */
+
+function updateAll() {
+    if (!rows.length) {
+        return;
+    }
+
+    filteredRows =
+        getFilteredRows();
+
+    /*
+     * KPI
+     */
+
+    renderKpis(
+        filteredRows
+    );
+
+    /*
+     * Charts
+     */
+
+    renderCharts(
+        filteredRows
+    );
+
+    /*
+     * Comparison
+     */
+
+    if (compareEnabled) {
+        renderComparison(
+            filteredRows
+        );
+    }
+
+    /*
+     * Table
+     */
+
+    renderTable(
+        filteredRows
+    );
+
+    /*
+     * Region
+     */
+
+    renderRegionPerformance(
+        filteredRows
+    );
+
+    /*
+     * Map
+     */
+
+    renderMapList(
+        filteredRows
+    );
+
+    /*
+     * Data page
+     */
+
+    renderDataPage(
+        filteredRows
+    );
+
+    /*
+     * Topology if visible
+     */
+
+    const mapView =
+        $("#mapView");
+
+    if (
+        mapView &&
+        (
+            mapView.classList.contains(
+                "active"
+            ) ||
+            mapView.style.display !== "none"
+        )
+    ) {
+        setTimeout(() => {
+            renderTopology(
+                filteredRows
+            );
+        }, 50);
+    }
+
+    /*
+     * Update status
+     */
+
+    updateStatus();
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+function updateStatus() {
+    const possibleSelectors = [
+        ".status-text",
+        "#statusText",
+        ".data-status"
+    ];
+
+    const count =
+        filteredRows.length;
+
+    possibleSelectors.forEach(
+        selector => {
+            const element =
+                $(selector);
+
+            if (!element) {
+                return;
+            }
+
+            element.textContent =
+                `${count.toLocaleString()} records`;
+        }
+    );
 }
 
 /* =========================================================
    CLOCK
    ========================================================= */
 
-function updateClock() {
-  const clock =
-    document.querySelector(
-      ".clock"
+function setupClock() {
+    const clock =
+        $(".clock");
+
+    if (!clock) {
+        return;
+    }
+
+    function updateClock() {
+        const now =
+            new Date();
+
+        clock.textContent =
+            now.toLocaleString(
+                "en-GB",
+                {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                }
+            );
+    }
+
+    updateClock();
+
+    setInterval(
+        updateClock,
+        1000
     );
-
-  if (!clock) return;
-
-  const now =
-    new Date();
-
-  clock.textContent =
-    now.toLocaleTimeString(
-      "id-ID",
-      {
-        hour12: false
-      }
-    );
-}
-
-function startClock() {
-  updateClock();
-
-  setInterval(
-    updateClock,
-    1000
-  );
 }
 
 /* =========================================================
    SETTINGS
    ========================================================= */
 
-function updateSettingsText() {
-  const settingRows =
-    document.querySelectorAll(
-      "#settingsView .setting-row"
-    );
+function setupSettings() {
+    const settingRows =
+        $$("#settingsView .setting-row");
 
-  settingRows.forEach(
-    (row) => {
-      const label =
-        row.querySelector(
-          "b"
-        );
+    settingRows.forEach(row => {
+        const checkbox =
+            row.querySelector(
+                'input[type="checkbox"]'
+            );
 
-      const value =
-        row.querySelector(
-          "span"
-        );
-
-      if (
-        label &&
-        value &&
-        label.textContent
-          .trim()
-          .toLowerCase() ===
-          "traffic unit"
-      ) {
-        value.textContent =
-          `${TRAFFIC_UNIT} (decimal, source column Byte)`;
-      }
-    }
-  );
-}
-
-/* =========================================================
-   MAIN UPDATE
-   ========================================================= */
-
-function update() {
-  renderKpis();
-  renderCharts();
-  renderTable();
-}
-
-/* =========================================================
-   CSV LOAD
-   ========================================================= */
-
-function validateColumns(data) {
-  if (!data || !data.length) {
-    throw new Error(
-      "CSV kosong atau tidak memiliki data."
-    );
-  }
-
-  const requiredColumns = [
-    "15 Minutes",
-    "REGION",
-    "BRANCH",
-    "KABUPATEN",
-    "CIRCLE",
-    "Total Traffic(Byte)",
-    "Downlink TCP Retransmission Rate(%)",
-    "Uplink TCP Retransmission Rate(%)",
-    "TCP Connection Success Rate (Included RST)(%)",
-    "Downlink TCP Packet Loss Rate(%)",
-    "Uplink TCP Packet Loss Rate(%)",
-    "E2E Delay(ms)",
-    "SYN ACK-ACK Delay(ms)",
-    "SYN-SYN ACK Delay(ms)"
-  ];
-
-  const columns =
-    Object.keys(
-      data[0]
-    );
-
-  const missing =
-    requiredColumns.filter(
-      (column) =>
-        !columns.includes(
-          column
-        )
-    );
-
-  if (missing.length) {
-    throw new Error(
-      "Kolom CSV tidak sesuai. Missing: " +
-        missing.join(", ")
-    );
-  }
-}
-
-function cleanRows(data) {
-  return data
-    .map((row) => {
-      const clean = {};
-
-      Object.keys(row).forEach(
-        (key) => {
-          clean[key] =
-            typeof row[key] ===
-            "string"
-              ? row[key].trim()
-              : row[key];
+        if (!checkbox) {
+            return;
         }
-      );
 
-      clean.__date =
-        parseDate(
-          clean["15 Minutes"]
+        checkbox.addEventListener(
+            "change",
+            () => {
+                document.body.classList.toggle(
+                    row.dataset.class || "",
+                    checkbox.checked
+                );
+            }
         );
+    });
+}
 
-      return clean;
-    })
-    .filter(
-      (row) => row.__date
+/* =========================================================
+   DOWNLOAD BUTTONS
+   ========================================================= */
+
+function setupDownloads() {
+    const buttons = [
+        $("#downloadCsv"),
+        $("#downloadCsv2")
+    ].filter(Boolean);
+
+    buttons.forEach(button => {
+        button.addEventListener(
+            "click",
+            () => {
+                downloadCsvFile(
+                    filteredRows
+                );
+            }
+        );
+    });
+}
+
+/* =========================================================
+   MAP SEARCH
+   ========================================================= */
+
+function setupMapSearch() {
+    const search =
+        $("#mapSearch");
+
+    if (!search) {
+        return;
+    }
+
+    search.addEventListener(
+        "input",
+        () => {
+            const keyword =
+                search.value
+                    .trim()
+                    .toLowerCase();
+
+            const container =
+                $("#mapList");
+
+            if (!container) {
+                return;
+            }
+
+            const regions =
+                uniqueSorted(
+                    filteredRows.map(
+                        row =>
+                            row.__region
+                    )
+                );
+
+            const filtered =
+                regions.filter(
+                    region =>
+                        region
+                            .toLowerCase()
+                            .includes(keyword)
+                );
+
+            const counts =
+                new Map();
+
+            filteredRows.forEach(row => {
+                const region =
+                    row.__region;
+
+                if (
+                    filtered.includes(
+                        region
+                    )
+                ) {
+                    counts.set(
+                        region,
+                        (counts.get(region) || 0) + 1
+                    );
+                }
+            });
+
+            container.innerHTML =
+                filtered.map(
+                    region => `
+                        <div class="map-list-item">
+                            <span>
+                                ${escapeHtml(region)}
+                            </span>
+                            <strong>
+                                ${(
+                                    counts.get(
+                                        region
+                                    ) || 0
+                                ).toLocaleString()}
+                            </strong>
+                        </div>
+                    `
+                ).join("");
+        }
     );
 }
 
-function showLoading() {
-  const kpis = $("kpis");
-  const charts = $("charts");
+/* =========================================================
+   INITIALIZE DASHBOARD
+   ========================================================= */
 
-  if (kpis) {
-    kpis.innerHTML = `
-      <div class="loading-state">
-        Loading SQM data...
-      </div>
-    `;
-  }
+function initializeDashboard() {
+    initializeDateInputs();
 
-  if (charts) {
-    charts.innerHTML = "";
-  }
+    updateDependentFilters();
+
+    setupFilters();
+
+    setupNavigation();
+
+    setupDataSearch();
+
+    setupDownloads();
+
+    setupMapSearch();
+
+    setupClock();
+
+    setupSettings();
+
+    /*
+     * Compare default
+     */
+
+    const {
+        compare,
+        compareMode,
+        period
+    } = getFilterElements();
+
+    if (compare) {
+        compareEnabled =
+            compare.checked;
+    }
+
+    if (compareMode) {
+        compareMode.disabled =
+            !compareEnabled;
+
+        compareMode =
+            compareMode.value ||
+            "previous";
+    }
+
+    if (period) {
+        currentPeriod =
+            normalizePeriod(
+                period.value
+            );
+    }
+
+    /*
+     * Resize topology
+     */
+
+    window.addEventListener(
+        "resize",
+        () => {
+            if (topologyInitialized) {
+                renderTopology(
+                    filteredRows
+                );
+            }
+        }
+    );
 }
 
-function showError(error) {
-  console.error(
-    "SQM Dashboard Error:",
-    error
-  );
+/* =========================================================
+   DEBUG INFORMATION
+   ========================================================= */
 
-  const message =
-    error?.message ||
-    String(error);
-
-  const kpis = $("kpis");
-  const charts = $("charts");
-
-  if (kpis) {
-    kpis.innerHTML = `
-      <div class="error-state">
-        <strong>Data Error</strong>
-        <span>${escapeHtml(
-          message
-        )}</span>
-      </div>
-    `;
-  }
-
-  if (charts) {
-    charts.innerHTML = `
-      <div class="chart-card empty-chart">
-        <div class="empty-title">
-          CSV tidak dapat diproses
-        </div>
-        <div class="empty-text">
-          Pastikan file berada di:
-          <code>data/raw_data.csv</code>
-        </div>
-      </div>
-    `;
-  }
-}
-
-function loadCsv() {
-  showLoading();
-
-  if (
-    typeof Papa ===
-    "undefined"
-  ) {
-    showError(
-      new Error(
-        "PapaParse tidak ditemukan. Pastikan CDN PapaParse aktif di index.html."
-      )
+function printDebugInfo() {
+    console.log(
+        "========== SQM DEBUG =========="
     );
 
-    return;
-  }
+    console.log(
+        "CSV_PATH:",
+        CSV_PATH
+    );
 
-  console.log(
-    "Loading CSV:",
-    CSV_PATH
-  );
+    console.log(
+        "Rows:",
+        rows.length
+    );
 
-  Papa.parse(
-    CSV_PATH,
-    {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false,
-
-      complete: function (
-        results
-      ) {
-        try {
-          console.log(
-            "CSV berhasil di-load"
-          );
-
-          console.log(
-            "Jumlah rows:",
-            results.data.length
-          );
-
-          if (
-            results.errors &&
-            results.errors.length
-          ) {
-            console.warn(
-              "CSV parse warnings:",
-              results.errors
-            );
-          }
-
-          validateColumns(
-            results.data
-          );
-
-          rows =
-            cleanRows(
-              results.data
-            );
-
-          if (!rows.length) {
-            throw new Error(
-              "CSV berhasil dibaca tetapi tidak ada timestamp yang valid pada kolom '15 Minutes'."
-            );
-          }
-
-          rows.sort(
-            (a, b) =>
-              a.__date -
-              b.__date
-          );
-
-          console.log(
-            "Rows valid:",
-            rows.length
-          );
-
-          console.log(
+    if (rows.length) {
+        console.log(
             "First row:",
             rows[0]
-          );
+        );
 
-          console.log(
+        console.log(
             "Last row:",
-            rows[
-              rows.length - 1
-            ]
-          );
-
-          setupFilters();
-          setupDownloads();
-          setupNavigation();
-          updateSettingsText();
-
-          $("dataSearch")?.addEventListener(
-            "input",
-            renderDataPage
-          );
-
-          update();
-          startClock();
-
-          console.log(
-            "SOC-SQM-DASHBOARD ready."
-          );
-        } catch (error) {
-          showError(error);
-        }
-      },
-
-      error: function (
-        error
-      ) {
-        showError(
-          new Error(
-            "Gagal membaca CSV. Pastikan path '" +
-              CSV_PATH +
-              "' benar dan file dapat diakses."
-          )
+            rows[rows.length - 1]
         );
 
-        console.error(
-          "PapaParse error:",
-          error
+        console.log(
+            "First date:",
+            rows[0].__date
         );
-      }
+
+        console.log(
+            "Last date:",
+            rows[rows.length - 1].__date
+        );
+
+        console.log(
+            "Regions:",
+            uniqueSorted(
+                rows.map(
+                    row =>
+                        row.__region
+                )
+            )
+        );
+
+        console.log(
+            "Circles:",
+            uniqueSorted(
+                rows.map(
+                    row =>
+                        row.__circle
+                )
+            )
+        );
     }
-  );
+
+    console.log(
+        "==============================="
+    );
 }
 
 /* =========================================================
-   INITIALIZATION
+   START APPLICATION
    ========================================================= */
 
 document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-    loadCsv();
-  }
+    "DOMContentLoaded",
+    () => {
+        console.log(
+            "SOC-SQM-DASHBOARD starting..."
+        );
+
+        loadCsv();
+    }
 );
+
+/* =========================================================
+   GLOBAL DEBUG
+   ========================================================= */
+
+window.SQMDashboard = {
+    getRows: () => rows,
+
+    getFilteredRows: () =>
+        filteredRows,
+
+    reload: () =>
+        loadCsv(),
+
+    debug: () =>
+        printDebugInfo(),
+
+    update: () =>
+        updateAll()
+};
