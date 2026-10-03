@@ -2455,11 +2455,31 @@ function renderMapList(sourceRows) {
    ========================================================= */
 
 function renderTopology(sourceRows) {
-    const canvas =
+    const topologyElement =
         $("#topologyCanvas");
 
-    if (!canvas) {
+    if (!topologyElement) {
         return;
+    }
+
+    let canvas = topologyElement;
+
+    if (!(canvas instanceof HTMLCanvasElement)) {
+        canvas = topologyElement.querySelector("canvas");
+
+        if (!canvas) {
+            canvas = document.createElement("canvas");
+            topologyElement.appendChild(canvas);
+        }
+
+        canvas.style.display = "block";
+        canvas.style.width = "100%";
+        canvas.style.height =
+            topologyElement.clientHeight > 0 ? "100%" : "500px";
+
+        if (topologyElement.clientHeight === 0) {
+            topologyElement.style.minHeight = "500px";
+        }
     }
 
     const ctx =
