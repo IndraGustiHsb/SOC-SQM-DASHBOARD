@@ -475,11 +475,9 @@ function normalizeParsedRows(data) {
     });
 }
 
-async function fetchCsvText(url) {
-    const finalUrl = new URL(
-        url,
-        window.location.href
-    ).href;
+async function fetchCsvText() {
+  const response = await fetch(url);
+}.href;
 
     console.log("FETCH CSV:", finalUrl);
 
