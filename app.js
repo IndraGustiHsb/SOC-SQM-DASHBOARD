@@ -498,12 +498,6 @@ async function fetchCsvText(url) {
     return text;
 };
 
-    const text = await response.text();
-
-    console.log("CSV HTTP status:", response.status);
-    console.log("CSV URL:", url);
-    console.log("Ukuran CSV:", text.length);
-
     if (!response.ok) {
         throw new Error(
             `HTTP ${response.status} ${response.statusText}`
