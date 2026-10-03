@@ -477,7 +477,6 @@ function normalizeParsedRows(data) {
 
 async function fetchCsvText() {
   const response = await fetch(url);
-}.href;
 
     console.log("FETCH CSV:", finalUrl);
 
