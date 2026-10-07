@@ -20,13 +20,32 @@ function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'sh
 function metricValue(r,key){const v=Number(r[key]||0);return key==='Total Traffic(Byte)'?v/TRAFFIC_DIVISOR:v}
 function unique(field){return [...new Set(rows.map(r=>r[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
 function fillSelect(id,vals){const el=document.getElementById(id), old=el.value;el.innerHTML='<option value="ALL">All '+(id==='region'?'Region':id==='circle'?'Circle':id==='branch'?'Branch':'Kabupaten')+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(vals.includes(old))el.value=old}
+function refreshFilterPickers(){document.querySelectorAll('.filter-picker').forEach(picker=>picker._syncOptions?.())}
+function enhanceLocationFilters(){
+ ['circle','region','branch','kabupaten'].forEach(id=>{
+  const select=document.getElementById(id),label=select.closest('label'),picker=document.createElement('div');
+  picker.className='filter-picker';picker.innerHTML='<input type="text" autocomplete="off" aria-haspopup="listbox"><button type="button" class="filter-picker-toggle" aria-label="Buka pilihan">⌄</button><div class="filter-picker-menu" role="listbox"></div>';
+  const input=picker.querySelector('input'),toggle=picker.querySelector('button'),menu=picker.querySelector('.filter-picker-menu');
+  select.classList.add('filter-native-hidden');select.insertAdjacentElement('afterend',picker);
+  const close=()=>{picker.classList.remove('open');input.setAttribute('aria-expanded','false')};
+  const sync=()=>{input.value=select.options[select.selectedIndex]?.text||'';menu.replaceChildren();[...select.options].forEach(option=>{const item=document.createElement('button');item.type='button';item.className='filter-picker-option';item.setAttribute('role','option');item.textContent=option.text;item.dataset.value=option.value;item.addEventListener('click',()=>{select.value=option.value;input.value=option.text;close();select.dispatchEvent(new Event('change',{bubbles:true}))});menu.append(item)});filterMenu()};
+  const filterMenu=()=>{const query=input.value.trim().toLocaleLowerCase();let visible=0;menu.querySelectorAll('.filter-picker-option').forEach(item=>{const match=!query||item.textContent.toLocaleLowerCase().includes(query);item.hidden=!match;if(match)visible++});menu.dataset.empty=visible?'':'true'};
+  const open=()=>{picker.classList.add('open');input.setAttribute('aria-expanded','true');filterMenu()};
+  input.setAttribute('role','combobox');input.setAttribute('aria-expanded','false');input.setAttribute('aria-autocomplete','list');
+  input.addEventListener('focus',()=>{input.select();open()});input.addEventListener('input',()=>{open();filterMenu()});
+  input.addEventListener('keydown',event=>{if(event.key==='Escape')close();if(event.key==='Enter'){event.preventDefault();menu.querySelector('.filter-picker-option:not([hidden])')?.click()}});
+  toggle.addEventListener('click',()=>picker.classList.contains('open')?close():(input.focus(),open()));
+  document.addEventListener('click',event=>{if(!picker.contains(event.target))close()});
+  picker._syncOptions=sync;sync();
+ });
+}
 function setupFilters(){
- const min=rows[0].dt,max=rows[rows.length-1].dt; dateFrom.value=isoDate(min);dateTo.value=isoDate(max); region.innerHTML='<option value="ALL">All Region</option>'+unique('REGION').map(v=>`<option>${esc(v)}</option>`).join(''); refreshDependent();
- ['dateFrom','dateTo','period','region','circle','branch','kabupaten','compare','compareMode'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(['region','circle','branch'].includes(id))refreshDependent();update()})); reset.onclick=()=>{dateFrom.value=isoDate(min);dateTo.value=isoDate(max);period.value='15min';region.value=circle.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareMode.value='lastWeek';refreshDependent();update()};
+ const min=rows[0].dt,max=rows[rows.length-1].dt; dateFrom.value=isoDate(min);dateTo.value=isoDate(max); circle.innerHTML='<option value="ALL">All Circle</option>'+unique('CIRCLE').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); refreshDependent();
+ ['dateFrom','dateTo','period','circle','region','branch','kabupaten','compare','compareMode'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(['circle','region','branch'].includes(id))refreshDependent();update()})); reset.onclick=()=>{dateFrom.value=isoDate(min);dateTo.value=isoDate(max);period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareMode.value='lastWeek';refreshDependent();update()};
 }
 function refreshDependent(){
- const r=region.value,c=circle.value,b=branch.value;
- let f=rows.filter(x=>r==='ALL'||x.REGION===r);fillSelect('circle',uniqueFrom(f,'CIRCLE'));f=f.filter(x=>c==='ALL'||x.CIRCLE===c);fillSelect('branch',uniqueFrom(f,'BRANCH'));f=f.filter(x=>b==='ALL'||x.BRANCH===b);fillSelect('kabupaten',uniqueFrom(f,'KABUPATEN'));if(!['ALL',...uniqueFrom(f,'KABUPATEN')].includes(kabupaten.value))kabupaten.value='ALL';
+ const c=circle.value,r=region.value,b=branch.value;
+ let f=rows.filter(x=>c==='ALL'||x.CIRCLE===c);fillSelect('region',uniqueFrom(f,'REGION'));f=f.filter(x=>r==='ALL'||x.REGION===r);fillSelect('branch',uniqueFrom(f,'BRANCH'));f=f.filter(x=>b==='ALL'||x.BRANCH===b);fillSelect('kabupaten',uniqueFrom(f,'KABUPATEN'));if(!['ALL',...uniqueFrom(f,'KABUPATEN')].includes(kabupaten.value))kabupaten.value='ALL';refreshFilterPickers();
 }
 function uniqueFrom(arr,field){return [...new Set(arr.map(x=>x[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
 function filtered(extraShiftDays=0){
@@ -178,7 +197,7 @@ function initializeDashboard(payload){
  renderTable(rows,'dataBody','dataHead',1000);
  const notice=document.getElementById('csvLoadNotice');
  if(notice){notice.hidden=false;notice.classList.toggle('is-warning',warnings.length>0);notice.textContent=warnings.length?`File dimuat: ${loadedFiles.join(', ')}. File dilewati: ${warnings.join(' | ')}`:`Data berhasil dimuat dari: ${loadedFiles.join(', ')}.`;}
- setupFilters();
+ setupFilters();enhanceLocationFilters();
  const regionDates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort(),regionFrom=document.getElementById('regionFrom'),regionTo=document.getElementById('regionTo');
  regionFrom.min=regionTo.min=regionDates[0];regionFrom.max=regionTo.max=regionDates.at(-1);regionFrom.value=regionTo.value=regionDates.at(-1);
  try{update();}catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
