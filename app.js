@@ -164,7 +164,7 @@ function loadCsvFiles(){
     if(part.error){warnings.push(`${part.file||'(nama kosong)'}: ${part.error}`);return}
     const signature=part.headers.join('\u001f');
     if(expected&&signature!==expected){warnings.push(`${part.file}: susunan header berbeda dan file dilewati.`);return}
-    expected ||= signature;loadedFiles.push(part.file);data.push(...part.data);
+    expected ||= signature;loadedFiles.push(part.file);part.data.forEach(row=>data.push(row));
    });
    if(!loadedFiles.length)throw new Error(`Tidak ada file CSV yang valid. ${warnings.join(' | ')}`);
    return {data,warnings,loadedFiles};
