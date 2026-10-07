@@ -4,16 +4,71 @@
 .topology-canvas{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,rgba(0,164,220,.12),transparent 55%),linear-gradient(180deg,#04172a,#03111f)}
 .indonesia-map-svg{display:block;width:100%;height:100%;min-height:460px}
 .map-graticule path{fill:none;stroke:rgba(57,133,173,.11);stroke-width:1;stroke-dasharray:3 8}
-.id-land{fill:url(#landGradient);stroke:#168bc0;stroke-width:1.5;stroke-linejoin:round}
+.id-land{fill:url(#landGradient);stroke:#37a7ce;stroke-width:1.05;stroke-linejoin:round;paint-order:stroke fill;filter:drop-shadow(0 0 2px rgba(30,166,215,.32))}
 .small-island{stroke-width:1.2}
-.map-routes path{fill:none;stroke:#00bfff;stroke-width:1;stroke-dasharray:5 7;opacity:.24}
+.map-routes path{fill:none;stroke:#5cc9e8;stroke-width:1;stroke-dasharray:3 9;opacity:.12}
 .map-sea-label{fill:#5285a5;font-size:13px;font-weight:700;letter-spacing:5px;text-anchor:middle;opacity:.38}
 .id-marker{cursor:pointer}
 .id-marker-halo{fill:rgba(0,191,255,.12);stroke:rgba(0,191,255,.25);stroke-width:1}
 .id-marker-dot{fill:#20e887;stroke:#bafee0;stroke-width:1.5;filter:drop-shadow(0 0 5px rgba(32,232,135,.85))}
 .id-marker:hover .id-marker-halo,.id-marker:focus .id-marker-halo{fill:rgba(0,191,255,.28);stroke:#00bfff;stroke-width:2}
+.id-label-card rect{fill:rgba(3,20,35,.94);stroke:rgba(69,178,221,.68);stroke-width:1}
+.id-label-card text{fill:#e5f6ff;font:700 8px Arial,sans-serif;letter-spacing:.15px;pointer-events:none}
+.id-label-card .id-label-count{fill:#80c9e9;font-size:7px;font-weight:500}
 .id-marker-label{fill:#dff5ff;font:700 10px Arial,sans-serif;paint-order:stroke;stroke:#03111f;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
 .map-compass path{fill:#35c9ff}.map-compass text{fill:#9bdfff;font:700 10px Arial,sans-serif}
 .map-key{position:absolute;left:18px;bottom:12px;display:flex;gap:18px;align-items:center;color:#74a6ca;font-size:10px;background:rgba(2,12,23,.75);padding:7px 10px;border:1px solid rgba(22,139,192,.32);border-radius:5px}
 .map-key i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#20e887;margin-right:5px;box-shadow:0 0 6px #20e887}
 @media(max-width:800px){.indonesia-map-svg{min-height:400px}.id-marker-label{font-size:8px}.map-key{font-size:9px;gap:8px;left:8px;bottom:8px}}
+
+/* Map layout inspired by the network map reference */
+.topology-canvas{background:radial-gradient(ellipse at 52% 52%,rgba(0,126,180,.12),transparent 48%),linear-gradient(180deg,#031a2c,#020b15)}
+.map-stage{position:absolute;inset:0;overflow:hidden}
+.indonesia-map-svg{display:block;width:100%;height:100%;min-height:0}
+.id-land{stroke:#12688a;stroke-width:1;filter:drop-shadow(0 0 3px rgba(30,166,215,.18))}
+.map-routes path{stroke:#5cc9e8;opacity:.12}
+.id-marker-halo{fill:color-mix(in srgb,var(--marker-color,#00bfff) 18%,transparent);stroke:color-mix(in srgb,var(--marker-color,#00bfff) 42%,transparent)}
+.id-marker-dot{fill:var(--marker-color,#20e887);stroke:#d3fff5;stroke-width:1;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--marker-color,#20e887) 75%,transparent))}
+.map-region-card rect{fill:rgba(4,22,38,.95);stroke:rgba(32,145,192,.7);stroke-width:1}
+.map-region-card .map-card-title{fill:#e5f7ff;font:700 10px Arial,sans-serif;letter-spacing:.25px}
+.map-region-card .map-card-detail{fill:#9bc5df;font:8px Arial,sans-serif}
+.map-region-card .map-card-rate{fill:#20e887;font:700 8px Arial,sans-serif}
+.map-zoom-controls{position:absolute;right:14px;bottom:14px;display:grid;gap:5px}
+.map-zoom-controls button{width:31px;height:31px;border:1px solid rgba(37,146,192,.65);border-radius:7px;background:rgba(4,25,42,.94);color:#bcecff;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.28)}
+.map-zoom-controls button:hover{background:#0c4564;color:white}
+@media(max-width:800px){.topology{display:block;min-height:unset}.topology-canvas{height:68vh;min-height:440px}.map-zoom-controls{right:9px;bottom:9px}}
+
+/* Region traffic map and date comparison */
+.region-traffic-card,.region-comparison{padding:14px 16px;margin-bottom:12px}
+.region-section-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}
+.region-section-title h2{font-size:14px;margin:0;color:#eaf5ff}
+.region-section-title>span{font-size:10px;color:#77a6c9}
+.region-overview{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,.85fr);gap:14px;min-height:260px}
+.region-map-canvas{min-height:260px;position:relative;overflow:hidden;border:1px solid #0b3555;border-radius:7px;background:radial-gradient(ellipse at 48% 56%,rgba(0,146,213,.12),transparent 60%),linear-gradient(180deg,#04172a,#03101e)}
+.region-map-svg{width:100%;height:100%;min-height:260px;position:absolute;inset:0}
+.region-grid path{stroke:rgba(39,101,142,.18);stroke-width:1;stroke-dasharray:3 6;fill:none}
+.region-map-land .id-land{fill:url(#regionLand);stroke:#087bb4;stroke-width:2;opacity:.9}
+.region-map-routes path{fill:none;stroke:#22bbff;stroke-width:2;stroke-dasharray:4 6;opacity:.38}
+.traffic-pin rect{fill:rgba(3,19,35,.94);stroke:#12547c;stroke-width:1.2}
+.traffic-pin .pin-stem{stroke:#1b9de0;stroke-width:1;stroke-dasharray:3 4;opacity:.65}
+.pin-title{fill:#b9d8ef;font-size:12px;font-weight:600}
+.pin-value{fill:#e8f5ff;font-size:11px}
+.traffic-pulse{fill:var(--region-color);opacity:.28;filter:url(#regionGlow)}
+.region-summary-wrap{overflow:auto;border:1px solid #0b3555;border-radius:7px;background:rgba(3,16,30,.54)}
+.region-summary{font-size:11px;white-space:nowrap}
+.region-summary th{position:static;padding:9px 10px;background:#071f36;color:#8fb8d6;font-size:10px}
+.region-summary td{padding:10px;border-color:rgba(11,53,83,.65);color:#d7eafa}
+.region-summary td:nth-child(2){text-align:right;font-variant-numeric:tabular-nums}
+.region-dot{display:inline-block;width:7px;height:7px;margin-right:8px;border-radius:50%;background:var(--region-color);box-shadow:0 0 8px var(--region-color)}
+.region-summary .trend{text-align:right;font-size:10px;font-weight:bold}
+.region-summary .trend.up{color:#21dfa1}.region-summary .trend.down{color:#57b8ff}
+.compare-title{margin-bottom:8px}
+.compare-title>div:first-child{display:flex;align-items:center;gap:14px}
+.compare-title select{background:#071c30;border:1px solid #104265;color:#99bdd8;border-radius:5px;padding:6px 9px;font-size:10px}
+.region-chart-legend{display:flex;gap:16px;color:#94b8d4;font-size:10px}
+.region-chart-legend span{display:flex;align-items:center;gap:6px}
+.legend-swatch{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend-swatch.old{background:#718ba8}.legend-swatch.new{background:#168fff}
+.region-chart-wrap{height:230px;position:relative}
+@media(max-width:900px){.region-overview{grid-template-columns:1fr}.region-map-canvas{min-height:280px}.region-summary-wrap{max-height:230px}}
+@media(max-width:560px){.region-traffic-card,.region-comparison{padding:11px}.region-section-title,.compare-title>div:first-child{align-items:flex-start;flex-direction:column}.region-map-canvas{min-height:235px}.region-map-svg{min-height:235px}.pin-title{font-size:14px}.pin-value{font-size:12px}.region-chart-wrap{height:210px}}

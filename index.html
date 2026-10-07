@@ -55,16 +55,17 @@
       </section>
 
       <section id="mapView" class="view">
-        <div class="map-layout">
-          <aside class="map-panel panel">
-            <h2>⌖ Network Map</h2>
-            <div class="search-box">⌕ <input id="mapSearch" placeholder="Search region, circle, branch, or kabupaten..."></div>
-            <div class="tabs"><button class="map-tab active" data-map="region">Region</button><button class="map-tab" data-map="circle">Circle</button><button class="map-tab" data-map="branch">Branch</button><button class="map-tab" data-map="kabupaten">Kabupaten</button></div>
-            <div id="mapList" class="map-list"></div>
-            <div class="map-stat"><h3>Region Performance</h3><div id="regionPerformance"></div></div>
-          </aside>
-          <section class="topology panel"><div class="topology-title"><h2>Indonesia Network Map</h2><span>Lokasi dan jumlah rekaman dari raw_data.csv</span></div><div id="topologyCanvas" class="topology-canvas"></div></section>
-        </div>
+        <section class="region-traffic-card panel">
+          <div class="region-section-title"><h2>Traffic by Region</h2><span id="regionDateCaption">Ringkasan berdasarkan data CSV</span></div>
+          <div class="region-overview">
+            <div id="topologyCanvas" class="region-map-canvas"></div>
+            <div class="region-summary-wrap"><table class="region-summary"><thead><tr><th>Region</th><th>Traffic (TB)</th><th>Trend</th></tr></thead><tbody id="regionSummaryBody"></tbody></table></div>
+          </div>
+        </section>
+        <section class="region-comparison panel">
+          <div class="region-section-title compare-title"><div><h2>Region Comparison</h2><select id="regionMetric"><option value="Total Traffic(Byte)">Total Traffic (TB)</option><option value="TCP Connection Success Rate (Included RST)(%)">TCP Success Rate (%)</option><option value="Downlink TCP Retransmission Rate(%)">DL TCP Retransmission (%)</option><option value="E2E Delay(ms)">E2E Delay (ms)</option></select></div><div id="regionChartLegend" class="region-chart-legend"></div></div>
+          <div class="region-chart-wrap"><canvas id="regionComparisonChart"></canvas></div>
+        </section>
       </section>
 
       <section id="dataView" class="view">
