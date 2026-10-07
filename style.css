@@ -154,3 +154,6 @@
 
 .filters{grid-template-columns:1.05fr 1.05fr .9fr 1fr 1.15fr 1.15fr 1.2fr auto 1fr auto}
 
+
+.compare-date-group:not([hidden]){grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(160px,220px));gap:9px;padding-top:2px}.compare-date-group label{display:flex;flex-direction:column;gap:5px;color:#8dc0e6}.compare-date-group input{width:100%;margin:0;background:#04172b;border:1px solid #075083;color:#eaf6ff;border-radius:5px;padding:8px 9px;color-scheme:dark}.compare-date-group input:focus{outline:1px solid #10a8ee;border-color:#10a8ee}@media(max-width:800px){.compare-date-group:not([hidden]){grid-template-columns:repeat(2,minmax(0,1fr))}}
+
