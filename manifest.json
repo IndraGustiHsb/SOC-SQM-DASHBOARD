@@ -1,7 +1,6 @@
 {
   "files": [
     "raw_data.csv",
-    "raw_data_baru_01.csv",
-    "raw_data_baru_02.csv"
+    "raw_data_01.csv",
   ]
 }
