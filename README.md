@@ -8,4 +8,4 @@ Static dashboard for SQM network monitoring.
 - `data/raw_data.csv` (130,936 data rows)
 - `data/indonesia-outline.json` (Natural Earth coastline outline)
 
-The Network Map shows traffic totals for six macro-regions (Sumatera, Jawa, Kalimantan, Sulawesi, Bali & Nusa Tenggara, and Papua), a date-based traffic summary, and a two-date regional comparison chart. The latest two dates present in `data/raw_data.csv` are selected automatically. Traffic sums are derived from source rows; other selectable metrics use regional averages.
+The Network Map shows an Indonesia outline, six macro-region data points, KQI summaries, and branch/kabupaten counts. Choose a From/To date range and any available KQI to refresh the values and comparison chart. The chart compares the selected range with the immediately previous range of equal length. Traffic sums are derived from source rows; other KQIs use regional averages. Regions without source records appear as “Tidak ada data.” The CSV contains no GPS coordinates, so map points are regional anchors, not exact branch locations.
