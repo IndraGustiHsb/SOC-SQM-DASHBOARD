@@ -18,6 +18,24 @@ function parseDate(s){const [d,t]=s.split(' '),[m,day,y]=d.split('/').map(Number
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const v=Number(r[key]||0);return key==='Total Traffic(Byte)'?v/TRAFFIC_DIVISOR:v}
+const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
+function normalizeLocationHierarchy(data){
+ const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
+ const circleShare=data.length?data.filter(row=>circleNames.has(String(row.CIRCLE||'').trim().toUpperCase())).length/data.length:0;
+ const regionCount=distinct('REGION'),branchCount=distinct('BRANCH'),kabupatenCount=distinct('KABUPATEN');
+ // raw_data_1 uses the right Circle but stores Region/Branch/Kabupaten values under different headers.
+ if(circleShare>.98&&kabupatenCount<=20&&regionCount>kabupatenCount&&branchCount>regionCount){
+  return data.map(row=>({...row,REGION:row.KABUPATEN,BRANCH:row.REGION,KABUPATEN:row.BRANCH}));
+ }
+ // Some rows in raw_data.csv rotate the four location values by one column.
+ return data.map(row=>{
+  const currentCircle=String(row.CIRCLE||'').trim().toUpperCase();
+  const shiftedCircle=String(row.REGION||'').trim().toUpperCase();
+  return !circleNames.has(currentCircle)&&circleNames.has(shiftedCircle)
+   ?{...row,CIRCLE:row.REGION,REGION:row.BRANCH,BRANCH:row.KABUPATEN,KABUPATEN:row.CIRCLE}
+   :row;
+ });
+}
 function unique(field){return [...new Set(rows.map(r=>r[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
 function fillSelect(id,vals){const el=document.getElementById(id), old=el.value;el.innerHTML='<option value="ALL">All '+(id==='region'?'Region':id==='circle'?'Circle':id==='branch'?'Branch':'Kabupaten')+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(vals.includes(old))el.value=old}
 function refreshFilterPickers(){document.querySelectorAll('.filter-picker').forEach(picker=>picker._syncOptions?.())}
@@ -175,7 +193,7 @@ function loadCsvFiles(){
    Papa.parse(`data/${encodeURIComponent(safeName)}?v=${Date.now()}`,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:result=>{
     if(result.errors.length){resolve({file:safeName,error:`Gagal membaca: ${result.errors[0].message}`});return}
     if(!result.meta.fields?.includes('15 Minutes')){resolve({file:safeName,error:'Header 15 Minutes tidak ditemukan.'});return}
-    resolve({file:safeName,headers:result.meta.fields,data:result.data.filter(row=>row['15 Minutes'])});
+    resolve({file:safeName,headers:result.meta.fields,data:normalizeLocationHierarchy(result.data.filter(row=>row['15 Minutes']))});
    },error:error=>resolve({file:safeName,error:`Gagal mengunduh: ${error.message||error}`})});
   }))).then(parts=>{
    let expected=null;const data=[],loadedFiles=[],warnings=[];
