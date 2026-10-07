@@ -142,3 +142,5 @@
 @media(max-width:1100px){.network-map-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.map-regions{width:280px}.map-sites{width:260px}}
 @media(max-width:760px){.network-map-stage{height:auto;min-height:800px;overflow:hidden}.region-map-canvas{height:360px;bottom:auto}.map-overlay-panel{position:relative;top:auto;left:auto;right:auto;width:auto;margin:380px 12px 0}.map-sites{margin-top:10px}.region-section-title{gap:12px}}
 @media(max-width:520px){.network-map-kpis{grid-template-columns:1fr 1fr}.network-map-kpi{padding:9px}.network-map-kpi strong{font-size:15px}.map-filter-row{grid-template-columns:1fr 1fr}.map-filter-row label:last-child{grid-column:1/-1}.map-filter-row input,.map-filter-row select{min-width:0;width:100%}.map-regions{margin-top:380px}.network-map-stage{min-height:900px}}
+
+.csv-load-notice{margin-top:7px;padding:7px 9px;border:1px solid #14704f;border-radius:6px;background:rgba(7,67,49,.45);color:#82efbd;font-size:10px;line-height:1.45}.csv-load-notice.is-warning{border-color:#9a6a1c;background:rgba(81,53,8,.46);color:#ffd27b}
