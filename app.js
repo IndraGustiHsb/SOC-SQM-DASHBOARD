@@ -1,3 +1,4 @@
+const CSV_PATH='data/raw_data.csv';
 const TRAFFIC_DIVISOR=1, TRAFFIC_UNIT='TB';
 let rows=[], charts={}, activeMap='region';
 const specs=[
@@ -139,35 +140,8 @@ function renderMap(){
  if(charts.regionComparison)charts.regionComparison.destroy();
  charts.regionComparison=new Chart(document.getElementById('regionComparisonChart'),{type:'bar',data:{labels,datasets:[{label:`${pretty(previousFrom)} — ${pretty(previousTo)}`,data:valuesA,backgroundColor:'#718ba8',borderRadius:3,barPercentage:.78,categoryPercentage:.68},{label:`${pretty(from)} — ${pretty(to)}`,data:valuesB,backgroundColor:'#168fff',borderRadius:3,barPercentage:.78,categoryPercentage:.68}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.raw===null?'Tidak ada data':fmtValue(c.raw)+' '+unit}`}}},scales:{x:{ticks:{color:'#91b6d3',maxRotation:0,minRotation:0,font:{size:10}},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#7299ba',maxTicksLimit:5},grid:{color:'rgba(41,94,130,.22)'}}}}});
 }function download(){const blob=new Blob([Papa.unparse(filtered())],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sqm_filtered_data.csv';a.click();URL.revokeObjectURL(a.href)}
-function loadCsvFiles(){
- return fetch(`data/manifest.json?v=${Date.now()}`,{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error(`Manifest CSV tidak dapat dimuat: HTTP ${response.status}`);return response.json()}).then(manifest=>{
-  if(!Array.isArray(manifest.files)||!manifest.files.length)throw new Error('Daftar files di data/manifest.json kosong.');
-  return Promise.all(manifest.files.map(file=>new Promise((resolve,reject)=>{
-   const safeName=String(file||'').trim();if(!safeName||safeName.includes('..')||safeName.includes('/')||safeName.includes('\\')){reject(new Error(`Nama file CSV tidak valid: ${safeName}`));return}
-   Papa.parse(`data/${encodeURIComponent(safeName)}?v=${Date.now()}`,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:result=>{
-    if(result.errors.length){reject(new Error(`Gagal membaca ${safeName}: ${result.errors[0].message}`));return}
-    if(!result.meta.fields?.includes('15 Minutes')){reject(new Error(`Header 15 Minutes tidak ditemukan pada ${safeName}.`));return}
-    resolve({file:safeName,headers:result.meta.fields,data:result.data.filter(row=>row['15 Minutes'])});
-   },error:error=>reject(new Error(`Gagal mengunduh ${safeName}: ${error.message||error}`))});
-  }))).then(parts=>{
-   const expected=parts[0].headers.join('\u001f');const mismatch=parts.find(part=>part.headers.join('\u001f')!==expected);
-   if(mismatch)throw new Error(`Header ${mismatch.file} berbeda dari file CSV pertama.`);
-   return parts.flatMap(part=>part.data);
-  });
- });
-}
-function initializeDashboard(data){
- rows=data.map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
- if(!rows.length)throw new Error('Semua file CSV kosong atau tidak berisi tanggal yang valid.');
- setupFilters();update();initNav();renderTable(rows,'dataBody','dataHead',1000);
- const regionDates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort(),regionFrom=document.getElementById('regionFrom'),regionTo=document.getElementById('regionTo');
- regionFrom.min=regionTo.min=regionDates[0];regionFrom.max=regionTo.max=regionDates.at(-1);regionFrom.value=regionTo.value=regionDates.at(-1);
- ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
- downloadCsv.onclick=download;downloadCsv2.onclick=download;
- dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
- setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);
-}
-loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);document.getElementById('regionDateCaption').textContent=`Gagal memuat data: ${error.message}`;});
+function initNav(){document.querySelectorAll('.nav-btn').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const view=btn.dataset.view;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active-view'));document.getElementById(view+'View').classList.add('active-view');if(view==='map')renderMap();if(view==='data'){renderTable(rows,'dataBody','dataHead',1000);dataCount.textContent=rows.length.toLocaleString()+' records'}})}
+Papa.parse(CSV_PATH+"?v="+Date.now(),{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:res=>{rows=res.data.filter(r=>r['15 Minutes']).map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).sort((a,b)=>a.dt-b.dt);setupFilters();update();initNav();renderTable(rows,'dataBody','dataHead',1000);const regionDates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort(),regionFrom=document.getElementById('regionFrom'),regionTo=document.getElementById('regionTo');regionFrom.min=regionTo.min=regionDates[0];regionFrom.max=regionTo.max=regionDates.at(-1);regionFrom.value=regionTo.value=regionDates.at(-1);['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));downloadCsv.onclick=download;downloadCsv2.onclick=download;dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);}});
 
 
 
