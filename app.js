@@ -175,11 +175,13 @@ function initializeDashboard(payload){
  const {data,warnings,loadedFiles}=payload;
  rows=data.map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
  if(!rows.length)throw new Error('Semua file CSV kosong atau tidak berisi tanggal yang valid.');
- setupFilters();update();renderTable(rows,'dataBody','dataHead',1000);
+ renderTable(rows,'dataBody','dataHead',1000);
  const notice=document.getElementById('csvLoadNotice');
  if(notice){notice.hidden=false;notice.classList.toggle('is-warning',warnings.length>0);notice.textContent=warnings.length?`File dimuat: ${loadedFiles.join(', ')}. File dilewati: ${warnings.join(' | ')}`:`Data berhasil dimuat dari: ${loadedFiles.join(', ')}.`;}
+ setupFilters();
  const regionDates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort(),regionFrom=document.getElementById('regionFrom'),regionTo=document.getElementById('regionTo');
  regionFrom.min=regionTo.min=regionDates[0];regionFrom.max=regionTo.max=regionDates.at(-1);regionFrom.value=regionTo.value=regionDates.at(-1);
+ try{update();}catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
  ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
  downloadCsv.onclick=download;downloadCsv2.onclick=download;
  dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
