@@ -224,7 +224,19 @@ function initializeDashboard(payload){
  ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
  downloadCsv.onclick=download;downloadCsv2.onclick=download;
  dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
- setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);
+const clock = document.getElementById('clock');
+
+if (clock) {
+    clock.textContent = new Date().toLocaleTimeString('en-GB', {
+        hour12: false
+    });
+
+    setInterval(() => {
+        clock.textContent = new Date().toLocaleTimeString('en-GB', {
+            hour12: false
+        });
+    }, 1000);
+}
 }
 initNav();
 loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);const notice=document.getElementById('csvLoadNotice');if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent=`Data CSV belum berhasil dimuat: ${error.message}`;}document.getElementById('regionDateCaption').textContent='Network Map dapat dibuka, tetapi data belum tersedia.';});
