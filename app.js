@@ -243,72 +243,80 @@ function updateKpis(cur, cmp) {
         }).join('');
 }
 
+
 // Update dashboard
 function update() {
-    // Ambil Current berdasarkan tanggal dan filter lokasi
-    const currentRows = filtered(dateFrom.value, dateTo.value);
+    try {
+        // Ambil Current berdasarkan tanggal dan filter lokasi
+        const currentRows = filtered(dateFrom.value, dateTo.value);
 
-    // Data Current harus memiliki record
-    if (!currentRows.length) {
-        activeCompareWindow = null;
-        updateKpis([], []);
-        renderCharts([], []);
-        renderTable([]);
-        return;
+        // Data Current harus memiliki record
+        if (!currentRows.length) {
+            activeCompareWindow = null;
+            updateKpis([], []);
+            renderCharts([], []);
+            renderTable([]);
+            return;
+        }
+
+        // Tentukan waktu aktual pertama dan terakhir Current
+        const currentStart = currentRows[0].dt;
+        const currentEnd = currentRows[currentRows.length - 1].dt;
+
+        const cur = aggregate(currentRows);
+        let cmp = [];
+
+        if (
+            compare.checked &&
+            compareFrom.value &&
+            compareTo.value
+        ) {
+            // Gunakan tanggal custom Compare,
+            // tetapi pertahankan jam Current.
+            const compareStart = dateWithTime(
+                compareFrom.value,
+                currentStart
+            );
+
+            const compareEnd = dateWithTime(
+                compareTo.value,
+                currentEnd
+            );
+
+            activeCompareWindow = {
+                start: compareStart,
+                end: compareEnd
+            };
+
+            // Ambil data sesuai rentang Compare
+            const comparisonRows = filteredDateTime(
+                compareStart,
+                compareEnd
+            );
+
+            cmp = aggregate(comparisonRows);
+
+        } else {
+            activeCompareWindow = null;
+        }
+
+        updateKpis(cur, cmp);
+        renderCharts(cur, cmp);
+        renderTable(currentRows);
+
+    } catch (error) {
+        console.error('DASHBOARD RENDER ERROR:', error);
+
+        if (notice) {
+            notice.hidden = false;
+            notice.classList.add('is-warning');
+            notice.textContent +=
+                ` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;
+        }
     }
-
-    // Tentukan waktu aktual pertama dan terakhir Current
-    const currentStart = currentRows[0].dt;
-    const currentEnd = currentRows[currentRows.length - 1].dt;
-
-    const cur = aggregate(currentRows);
-
-    let cmp = [];
-
-    if (
-        compare.checked &&
-        compareFrom.value &&
-        compareTo.value
-    ) {
-        // Gunakan tanggal custom Compare,
-        // tetapi pertahankan jam Current.
-        const compareStart = dateWithTime(
-            compareFrom.value,
-            currentStart
-        );
-
-        const compareEnd = dateWithTime(
-            compareTo.value,
-            currentEnd
-        );
-
-        activeCompareWindow = {
-            start: compareStart,
-            end: compareEnd
-        };
-
-        // Ambil hanya data pada rentang waktu Compare
-        const comparisonRows = filteredDateTime(
-            compareStart,
-            compareEnd
-        );
-
-        cmp = aggregate(comparisonRows);
-
-    } else {
-        activeCompareWindow = null;
-    }
-
-    updateKpis(cur, cmp);
-    renderCharts(cur, cmp);
-    renderTable(currentRows);
 }
-catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
- ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
- downloadCsv.onclick=download;downloadCsv2.onclick=download;
- dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
-const clock = document.getElementById('clock');
 
+// Update jam dashboard
 if (clock) {
     clock.textContent = new Date().toLocaleTimeString('en-GB', {
         hour12: false
@@ -320,8 +328,6 @@ if (clock) {
         });
     }, 1000);
 }
-}
-initNav();
 loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);const notice=document.getElementById('csvLoadNotice');if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent=`Data CSV belum berhasil dimuat: ${error.message}`;}document.getElementById('regionDateCaption').textContent='Network Map dapat dibuka, tetapi data belum tersedia.';});
 
 
