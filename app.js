@@ -303,9 +303,7 @@ function update() {
     renderCharts(cur, cmp);
     renderTable(currentRows);
 }
-
-    
-    }catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
+catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
  ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
  downloadCsv.onclick=download;downloadCsv2.onclick=download;
  dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
@@ -325,12 +323,5 @@ if (clock) {
 }
 initNav();
 loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);const notice=document.getElementById('csvLoadNotice');if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent=`Data CSV belum berhasil dimuat: ${error.message}`;}document.getElementById('regionDateCaption').textContent='Network Map dapat dibuka, tetapi data belum tersedia.';});
-
-
-
-
-
-
-
 
 
