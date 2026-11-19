@@ -395,7 +395,7 @@ function initializeDashboard(payload){
   dataSearch.oninput=()=>{const q=dataSearch.value.trim().toLowerCase();const found=rows.filter(r=>Object.values(r).some(v=>String(v??'').toLowerCase().includes(q)));renderTable(found,'dataBody','dataHead',1000)};
   sourceInitialized=true;
  }
- const first=datasets.wilayah.length?'wilayah':'sgw';document.getElementById('dataSource').value=first;activateDataSource(first);
+ const first=datasets.wilayah.length?'wilayah':datasets.sgw.length?'sgw':'wilayah';document.getElementById('dataSource').value=first;activateDataSource(first);
  const clock=document.querySelector('.clock');if(clock){clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false});setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);}
 }
 initNav();
