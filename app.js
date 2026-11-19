@@ -23,10 +23,11 @@ function parseDate(value,mode=dataMode){
  if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*(?:Z|[+-][0-9]{2}:?[0-9]{2})$/i.test(s))return new Date(s);
  const iso=s.match(/^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
  if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));
- // CSV date convention: MM/D/YYYY HH:mm. Example: 10/3/2026 19:00 = 3 October 2026 19:00 WIB.
- const m=s.match(/^([0-9]{1,2})[\\/.-]([0-9]{1,2})[\\/.-]([0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?$/);
+ // CSV date convention: MM/DD/YY HH:mm. Two-digit years 00-99 map to 2000-2099.
+ // Four-digit MM/D/YYYY is also accepted for compatibility with existing source files.
+ const m=s.match(/^([0-9]{1,2})[\\/.-]([0-9]{1,2})[\\/.-]([0-9]{2}|[0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?$/);
  if(!m)return new Date(NaN);
- const month=+m[1],day=+m[2],year=+m[3],hour=+(m[4]||0),minute=+(m[5]||0),second=+(m[6]||0);
+ const month=+m[1],day=+m[2],yearText=m[3],year=yearText.length===2?2000+Number(yearText):Number(yearText),hour=+(m[4]||0),minute=+(m[5]||0),second=+(m[6]||0);
  const parsed=new Date(year,month-1,day,hour,minute,second);
  if(month<1||month>12||day<1||day>31||parsed.getFullYear()!==year||parsed.getMonth()!==month-1||parsed.getDate()!==day||hour>23||minute>59||second>59)return new Date(NaN);
  return parsed;
