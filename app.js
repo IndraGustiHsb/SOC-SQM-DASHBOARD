@@ -1,8 +1,9 @@
-const TRAFFIC_DIVISOR=1, TRAFFIC_UNIT='TB';
-let rows=[], charts={}, activeMap='region';
+const TRAFFIC_DIVISOR=1000000000;
+let rows=[], datasets={wilayah:[],sgw:[]}, dataMode='wilayah', charts={}, activeMap='region';
+let sourceInitialized=false;
 let activeCurrentWindow=null, activeCompareWindow=null;
 const specs=[
- {key:'traffic',title:'Total Traffic',unit:'TB',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>v.toFixed(3)},
+ {key:'traffic',title:'Total Traffic',unit:'GB',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>v.toLocaleString('en-US',{maximumFractionDigits:3})+' GB'},
  {key:'dlRetx',title:'DL TCP Retransmission',unit:'%',color:'#20E887',icon:'⟳',source:'Downlink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
  {key:'ulRetx',title:'UL TCP Retransmission',unit:'%',color:'#FF9D00',icon:'◉',source:'Uplink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
  {key:'tcp',title:'TCP Success Rate',unit:'%',color:'#A84CFF',icon:'⬡',source:'TCP Connection Success Rate (Included RST)(%)',format:v=>v.toFixed(2)+'%'},
@@ -15,10 +16,11 @@ const specs=[
 const metricKeys=specs.map(s=>s.source);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function parseDate(s){const [d,t]=s.split(' '),[m,day,y]=d.split('/').map(Number);return new Date(y,m-1,day,...t.split(':').map(Number));}
+function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)return new Date(NaN);const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));const m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(!m)return new Date(s);const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));}
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
-function metricValue(r,key){const v=Number(r[key]||0);return key==='Total Traffic(Byte)'?v/TRAFFIC_DIVISOR:v}
+function metricValue(r,key){const v=Number(r[key]??0);if(key==='Total Traffic(Byte)')return dataMode==='wilayah'?v/TRAFFIC_DIVISOR:v;return Number.isFinite(v)?v:0}
+function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB';s.format=v=>v.toLocaleString('en-US',{maximumFractionDigits:3})+' '+s.unit;}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
 function normalizeLocationHierarchy(data){
  const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
@@ -60,7 +62,7 @@ function enhanceLocationFilters(){
 }
 function setupFilters(){
  const min=rows[0].dt,max=rows[rows.length-1].dt,minDate=isoDate(min),maxDate=isoDate(max); dateFrom.value=minDate;dateTo.value=maxDate;compareFrom.min=compareTo.min=minDate;compareFrom.max=compareTo.max=maxDate;compareFrom.value=minDate;compareTo.value=maxDate;document.getElementById('compareDateGroup').hidden=!compare.checked;circle.innerHTML='<option value="ALL">All Circle</option>'+unique('CIRCLE').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); refreshDependent();
- ['dateFrom','dateTo','period','circle','region','branch','kabupaten','compare','compareFrom','compareTo'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{if(['circle','region','branch'].includes(id))refreshDependent();if(id==='compare')document.getElementById('compareDateGroup').hidden=!compare.checked;if(id==='compareFrom')compareTo.min=compareFrom.value;if(id==='compareTo')compareFrom.max=compareTo.value;update()})); reset.onclick=()=>{dateFrom.value=minDate;dateTo.value=maxDate;period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareFrom.value=minDate;compareTo.value=maxDate;compareTo.min=minDate;compareFrom.max=maxDate;document.getElementById('compareDateGroup').hidden=true;refreshDependent();update()};
+ ['dateFrom','dateTo','period','circle','region','branch','kabupaten','sgwFilter','compare','compareFrom','compareTo'].forEach(id=>{const el=document.getElementById(id);el.onchange=()=>{if(['circle','region','branch'].includes(id))refreshDependent();if(id==='compare')document.getElementById('compareDateGroup').hidden=!compare.checked;if(id==='compareFrom')compareTo.min=compareFrom.value;if(id==='compareTo')compareFrom.max=compareTo.value;update()}}); reset.onclick=()=>{dateFrom.value=minDate;dateTo.value=maxDate;period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareFrom.value=minDate;compareTo.value=maxDate;compareTo.min=minDate;compareFrom.max=maxDate;document.getElementById('compareDateGroup').hidden=true;refreshDependent();update()};
 }
 function refreshDependent(){
  const c=circle.value,r=region.value,b=branch.value;
@@ -69,13 +71,13 @@ function refreshDependent(){
 function uniqueFrom(arr,field){return [...new Set(arr.map(x=>x[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
 function filtered(fromValue=dateFrom.value,toValue=dateTo.value){
  const from=new Date(fromValue+'T00:00:00'),to=new Date(toValue+'T23:59:59');
- return rows.filter(r=>r.dt>=from&&r.dt<=to&&(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value));
+ return rows.filter(r=>r.dt>=from&&r.dt<=to&&(dataMode==='sgw'?(sgwFilter.value==='ALL'||r.SGW===sgwFilter.value):(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value)));
 }
 function bucket(r){const p=period.value;if(p==='daily')return isoDate(r.dt);if(p==='hourly'){const d=new Date(r.dt);d.setMinutes(0,0,0);return d.toISOString()}return r.dt.toISOString()}
 function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>x[key]/=x.n);return x})}
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
 function dateWithTime(dateValue,referenceDate){const [year,month,day]=dateValue.split('-').map(Number);return new Date(year,month-1,day,referenceDate.getHours(),referenceDate.getMinutes(),referenceDate.getSeconds(),referenceDate.getMilliseconds());}
-function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value));}
+function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&(dataMode==='sgw'?(sgwFilter.value==='ALL'||r.SGW===sgwFilter.value):(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value)));}
 function localDayNumber(value){let d;if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}/.test(value)){const [y,m,day]=value.slice(0,10).split('-').map(Number);d=new Date(y,m-1,day);}else d=new Date(value);return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000;}
 function pointOffset(point,anchor,daily){if(daily)return localDayNumber(point.k)-localDayNumber(anchor);return Math.round((new Date(point.k).getTime()-new Date(anchor).getTime())/60000);}
 function compareSeries(current,comparison,key){if(!current.length)return[];if(!comparison.length||!activeCurrentWindow||!activeCompareWindow)return current.map(()=>null);const daily=period.value==='daily',lookup=new Map();comparison.forEach(point=>lookup.set(pointOffset(point,activeCompareWindow.start,daily),point[key]??null));return current.map(point=>{const offset=pointOffset(point,activeCurrentWindow.start,daily);return lookup.has(offset)?lookup.get(offset):null;});}
@@ -84,7 +86,7 @@ function compareRangeLabel(){if(!activeCompareWindow)return'Compare';const fmt=d
 function drawChart(spec,cur,cmp){const ctx=document.getElementById('ch_'+spec.key).getContext('2d');if(charts[spec.key])charts[spec.key].destroy();const labels=cur.map(x=>new Date(x.k).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+(period.value==='15min'?' '+new Date(x.k).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''));const datasets=[{label:'Current',data:cur.map(x=>x[spec.source]),borderColor:spec.color,backgroundColor:rgba(spec.color,.12),borderWidth:2,pointRadius:cur.length<=1?4:1.5,pointHoverRadius:5,tension:.3,fill:true,spanGaps:true}];if(compare.checked&&cmp.length){datasets.push({label:compareRangeLabel(),data:compareSeries(cur,cmp,spec.source),borderColor:spec.color,borderWidth:1.5,borderDash:[6,4],pointRadius:0,tension:.3,fill:false,spanGaps:true})}charts[spec.key]=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#74a6ca',maxTicksLimit:8},grid:{color:'rgba(24,85,122,.25)'}},y:{ticks:{color:'#74a6ca',maxTicksLimit:5},grid:{color:'rgba(24,85,122,.25)'}}}}});}
 function renderCharts(cur,cmp){const box=document.getElementById('charts');box.innerHTML=specs.map(s=>`<div class="chart-card"><div class="chart-head"><h3>${s.title} (${s.unit})</h3><div class="legend"><b style="color:${s.color}">━━ Current</b>${compare.checked&&cmp.length?` <b style="color:${s.color}">┄┄ ${compareRangeLabel()}</b>`:''}</div></div><canvas id="ch_${s.key}"></canvas></div>`).join('');specs.forEach(s=>drawChart(s,cur,cmp))}
 function updateKpis(cur,cmp){const c=cur.length?cur[cur.length-1]:null;document.getElementById('kpis').innerHTML=specs.slice(0,8).map((s,i)=>{const val=c?c[s.source]:0,old=compare.checked?compareLastValue(cur,cmp,s.source):null;let delta='';if(old!==null&&Number.isFinite(old)&&old!==0){const d=val-old,p=d/Math.abs(old)*100;delta=`<div class="delta">${d>=0?'▲':'▼'} ${Math.abs(p).toFixed(2)}%</div><div class="vs">vs ${s.format(old)} (Compare)</div>`;}else delta='<div class="delta">● Live</div><div class="vs">Tidak ada pasangan data Compare</div>';return `<div class="kpi ${['green','orange','purple','pink'][i%4]}"><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}</div>`;}).join('');}
-function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)','TOTAL TRAFFIC (TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td><td>${esc(r.REGION)}</td><td>${esc(r.CIRCLE)}</td><td>${esc(r.BRANCH)}</td><td>${esc(r.KABUPATEN)}</td><td class="num">${(Number(r['Total Traffic(Byte)'])/TRAFFIC_DIVISOR).toFixed(6)}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
+function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)','TOTAL TRAFFIC (TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td>${dataMode==='sgw'?'<td>'+esc(r.SGW)+'</td>':'<td>'+esc(r.REGION)+'</td><td>'+esc(r.CIRCLE)+'</td><td>'+esc(r.BRANCH)+'</td><td>'+esc(r.KABUPATEN)+'</td>'}<td class="num">${metricValue(r,'Total Traffic(Byte)').toFixed(6)}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
 function update(){const currentRows=filtered(dateFrom.value,dateTo.value).sort((a,b)=>a.dt-b.dt);if(!currentRows.length){activeCurrentWindow=null;activeCompareWindow=null;updateKpis([],[]);renderCharts([],[]);renderTable([]);return;}const currentStart=currentRows[0].dt,currentEnd=currentRows[currentRows.length-1].dt;activeCurrentWindow={start:currentStart,end:currentEnd};const cur=aggregate(currentRows);let cmp=[];if(compare.checked&&compareFrom.value&&compareTo.value){const compareStart=dateWithTime(compareFrom.value,currentStart),compareEnd=dateWithTime(compareTo.value,currentEnd);activeCompareWindow={start:compareStart,end:compareEnd};const comparisonRows=filteredDateTime(compareStart,compareEnd).sort((a,b)=>a.dt-b.dt);cmp=aggregate(comparisonRows);}else activeCompareWindow=null;updateKpis(cur,cmp);renderCharts(cur,cmp);renderTable(currentRows);}
 const indonesiaOutlinePaths=["M997.8 263.2L998.6 472.4L979.2 446.1L957.0 439.6L951.7 448.8L924.1 449.8L933.3 423.6L947.0 414.7L941.3 379.8L930.9 352.9L888.7 325.7L870.7 323.0L838.0 293.3L831.5 308.9L823.2 311.8L818.2 300.0L818.2 286.1L801.5 270.3L825.0 258.7L840.5 259.4L838.7 250.8L806.8 250.8L798.2 231.7L778.7 225.7L769.5 209.9L798.9 202.1L810.0 191.6L845.0 204.8L848.4 216.7L854.5 268.6L877.1 287.9L895.3 253.8L920.3 234.4L939.6 234.4L958.3 245.6L974.4 257.1L997.8 263.2Z","M648.6 465.2L650.8 471.5L651.2 481.3L636.9 505.2L618.3 512.3L615.7 508.4L617.6 497.5L627.0 478.0L648.6 465.2Z","M849.9 401.1L847.8 376.9L856.2 354.5L861.2 363.9L861.1 379.2L849.9 401.1Z","M494.2 46.9L481.8 75.9L497.8 106.3L494.0 121.1L518.4 150.8L492.6 154.6L485.4 176.5L486.3 205.6L465.4 227.5L464.8 259.5L456.4 308.6L453.2 297.1L428.4 311.6L419.8 292.0L404.3 290.1L393.4 279.9L367.5 291.4L359.5 275.9L345.3 277.6L327.3 273.9L324.0 230.9L313.1 222.0L302.7 194.5L299.6 166.4L302.2 136.7L315.1 115.3L318.7 136.8L333.6 154.9L347.7 148.4L361.6 150.7L374.3 134.5L384.7 131.7L405.4 140.7L423.1 133.8L434.3 89.2L442.7 78.0L450.2 41.5L475.3 41.5L494.2 46.9Z","M744.5 269.7L768.4 279.1L776.4 303.6L758.0 290.4L739.8 287.7L727.5 289.8L712.4 288.7L717.6 271.0L744.5 269.7Z","M690.1 301.4L675.0 295.5L670.8 281.7L692.8 280.2L698.2 290.8L690.1 301.4Z","M713.1 110.0L714.7 127.5L727.6 130.3L729.6 143.4L728.5 171.5L717.2 168.3L713.9 187.8L722.9 204.8L716.8 208.6L708.0 188.3L701.5 147.3L705.9 121.6L713.1 110.0Z","M604.1 151.7L629.1 150.3L650.7 127.0L654.5 134.2L637.0 166.0L620.6 172.2L599.6 165.9L563.3 167.5L544.3 172.1L541.2 196.4L560.7 225.0L572.5 210.4L613.1 199.5L611.3 214.3L601.8 209.6L592.3 228.4L573.2 240.9L593.8 282.0L589.8 293.0L609.4 330.1L609.2 351.2L597.6 360.6L589.0 349.3L599.6 323.0L578.2 335.5L572.8 326.6L575.6 314.2L559.9 295.4L561.5 264.1L547.0 273.9L548.8 311.3L549.7 357.2L535.9 361.9L526.5 352.4L532.8 322.9L529.4 291.9L520.2 291.7L513.5 269.7L522.5 248.7L525.6 223.2L536.5 174.8L541.1 161.6L559.6 137.7L576.6 147.2L604.1 151.7Z","M546.7 509.0L517.8 486.6L538.1 480.2L549.6 490.0L557.2 499.8L555.9 508.4L546.7 509.0Z","M569.5 453.8L584.0 451.3L603.6 439.6L600.4 457.4L567.6 466.5L538.7 462.6L538.6 450.8L555.9 444.1L569.5 453.8Z","M502.4 448.2L515.9 445.6L521.3 459.2L481.0 470.0L469.3 469.7L476.8 451.2L488.7 451.0L494.6 439.6L502.4 448.2Z","M289.5 385.9L292.5 397.3L334.2 400.5L339.0 387.3L379.4 402.7L387.3 423.5L420.0 429.4L446.7 448.4L421.9 460.7L397.9 447.7L378.2 448.6L355.6 446.2L335.2 440.5L310.0 428.2L294.0 425.0L284.9 429.1L245.2 415.8L241.4 402.0L221.5 399.7L236.4 369.0L262.9 370.9L280.4 383.4L289.5 385.9Z","M199.8 214.6L203.5 237.0L211.1 254.9L227.1 257.7L237.7 278.0L232.2 318.0L231.3 367.6L207.2 368.3L188.8 341.4L160.9 315.2L151.6 295.8L135.1 269.6L124.2 245.6L107.7 200.6L88.5 173.9L82.1 146.3L74.1 121.2L54.5 101.0L43.1 73.5L26.7 55.6L3.9 20.2L2.0 3.9L16.1 5.2L49.8 11.4L69.0 42.7L85.9 64.5L97.9 77.9L118.5 112.4L140.7 112.9L159.0 134.9L171.6 161.7L188.2 176.4L179.5 202.6L192.0 213.8L199.8 214.6Z"];
 const mapRegionPoints={
@@ -160,6 +162,7 @@ function regionDateStats(from,to,key){
  Object.values(result).forEach(x=>{if(key!=='Total Traffic(Byte)'&&x.count)x.value/=x.count});return result;
 }
 function renderMap(){
+ if(dataMode==='sgw'){document.getElementById('topologyCanvas').innerHTML='<div style="padding:28px;color:#9fc9e5">Network Map tersedia saat sumber data Wilayah dipilih.</div>';return;}
  const dates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort();if(!dates.length)return;
  const fromEl=document.getElementById('regionFrom'),toEl=document.getElementById('regionTo'),metric=document.getElementById('regionMetric').value;
  if(!fromEl.value)fromEl.value=dates.at(-1);if(!toEl.value)toEl.value=dates.at(-1);
@@ -194,55 +197,56 @@ function initNav(){
  }));
 }
 function loadCsvFiles(){
- return fetch(`data/manifest.json?v=${Date.now()}`,{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error(`Manifest CSV tidak dapat dimuat: HTTP ${response.status}`);return response.json()}).then(manifest=>{
-  if(!Array.isArray(manifest.files)||!manifest.files.length)throw new Error('Daftar files di data/manifest.json kosong.');
-  return Promise.all(manifest.files.map(file=>new Promise(resolve=>{
-   const safeName=String(file||'').trim();if(!safeName||safeName.includes('..')||safeName.includes('/')||safeName.includes('\\')){resolve({file:safeName,error:`Nama file CSV tidak valid: ${safeName}`});return}
-   Papa.parse(`data/${encodeURIComponent(safeName)}?v=${Date.now()}`,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:result=>{
-    if(result.errors.length){resolve({file:safeName,error:`Gagal membaca: ${result.errors[0].message}`});return}
-    if(!result.meta.fields?.includes('15 Minutes')){resolve({file:safeName,error:'Header 15 Minutes tidak ditemukan.'});return}
-    resolve({file:safeName,headers:result.meta.fields,data:normalizeLocationHierarchy(result.data.filter(row=>row['15 Minutes']))});
-   },error:error=>resolve({file:safeName,error:`Gagal mengunduh: ${error.message||error}`})});
-  }))).then(parts=>{
-   let expected=null;const data=[],loadedFiles=[],warnings=[];
-   parts.forEach(part=>{
-    if(part.error){warnings.push(`${part.file||'(nama kosong)'}: ${part.error}`);return}
-    const signature=part.headers.join('\u001f');
-    if(expected&&signature!==expected){warnings.push(`${part.file}: susunan header berbeda dan file dilewati.`);return}
-    expected ||= signature;loadedFiles.push(part.file);part.data.forEach(row=>data.push(row));
-   });
-   if(!loadedFiles.length)throw new Error(`Tidak ada file CSV yang valid. ${warnings.join(' | ')}`);
-   return {data,warnings,loadedFiles};
-  });
+ return fetch(`data/manifest.json?v=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Manifest tidak dapat dimuat: HTTP '+r.status);return r.json()}).then(async manifest=>{
+  const groups={wilayah:Array.isArray(manifest.wilayah_files)?manifest.wilayah_files:(manifest.files||[]),sgw:Array.isArray(manifest.sgw_files)?manifest.sgw_files:[]};
+  const read=async(mode,files)=>{
+   const parts=await Promise.all(files.map(file=>new Promise(resolve=>{
+    const name=String(file||'').trim();if(!name||name.includes('..')||name.includes('/')||name.includes('\\\\')){resolve({file:name,error:'Nama file tidak valid'});return}
+    Papa.parse(`data/${encodeURIComponent(name)}?v=${Date.now()}`,{download:true,header:true,skipEmptyLines:true,dynamicTyping:true,complete:res=>{
+     if(res.errors.length){resolve({file:name,error:res.errors[0].message});return}
+     const h=res.meta.fields||[],required=mode==='sgw'?['15 Minutes','SGW','Total Traffic(TB)']:['15 Minutes','REGION','BRANCH','KABUPATEN','CIRCLE','Total Traffic(Byte)'],missing=required.filter(x=>!h.includes(x));
+     if(missing.length){resolve({file:name,error:'Kolom wajib tidak ditemukan: '+missing.join(', ')});return}
+     const data=res.data.filter(x=>x['15 Minutes']).map(x=>{const row={...x};if(mode==='sgw'){row['Total Traffic(Byte)']=Number(x['Total Traffic(TB)']??0);row['TCP Connection Success Rate (Included RST)(%)']=x['TCP Connection Success Rate(%)']??x['TCP Connection Success Rate (Included RST)(%)']??0;['REGION','BRANCH','KABUPATEN','CIRCLE'].forEach(k=>row[k]='')}else row['TCP Connection Success Rate (Included RST)(%)']=x['TCP Connection Success Rate (Included RST)(%)']??x['TCP Connection Success Rate(%)']??0;return row});
+     resolve({file:name,headers:h,data});
+    },error:e=>resolve({file:name,error:e.message||String(e)})});
+   })));
+   let sig=null;const data=[],loadedFiles=[],warnings=[];parts.forEach(p=>{if(p.error){warnings.push(p.file+': '+p.error);return}const s=p.headers.join('\\u001f');if(sig&&s!==sig){warnings.push(p.file+': susunan header berbeda, file dilewati');return}sig||=s;loadedFiles.push(p.file);data.push(...p.data)});
+   return {data:mode==='wilayah'?normalizeLocationHierarchy(data):data,warnings,loadedFiles};
+  };
+  const [wilayah,sgw]=await Promise.all([read('wilayah',groups.wilayah),read('sgw',groups.sgw)]);
+  if(!wilayah.data.length&&!sgw.data.length)throw new Error('Tidak ada data valid. Periksa data/manifest.json.');
+  return {wilayah,sgw};
  });
 }
-function initializeDashboard(payload){
- const {data,warnings,loadedFiles}=payload;
- rows=data.map(r=>({...r,dt:parseDate(String(r['15 Minutes']))})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
- if(!rows.length)throw new Error('Semua file CSV kosong atau tidak berisi tanggal yang valid.');
- renderTable(rows,'dataBody','dataHead',1000);
+function activateDataSource(mode){
+ dataMode=mode;rows=datasets[mode]||[];setTrafficPresentation();
+ document.querySelectorAll('.location-filter').forEach(el=>el.hidden=mode==='sgw');
+ document.getElementById('sgwFilterLabel').hidden=mode!=='sgw';
+ const mapNav=document.querySelector('.nav-btn[data-view="map"]');if(mapNav)mapNav.disabled=mode==='sgw';
  const notice=document.getElementById('csvLoadNotice');
- if(notice){notice.hidden=false;notice.classList.toggle('is-warning',warnings.length>0);notice.textContent=warnings.length?`File dimuat: ${loadedFiles.join(', ')}. File dilewati: ${warnings.join(' | ')}`:`Data berhasil dimuat dari: ${loadedFiles.join(', ')}.`;}
- setupFilters();enhanceLocationFilters();
- const regionDates=[...new Set(rows.map(r=>isoDate(r.dt)))].sort(),regionFrom=document.getElementById('regionFrom'),regionTo=document.getElementById('regionTo');
- regionFrom.min=regionTo.min=regionDates[0];regionFrom.max=regionTo.max=regionDates.at(-1);regionFrom.value=regionTo.value=regionDates.at(-1);
- try{update();}catch(error){console.error('DASHBOARD RENDER ERROR:',error);if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent+=` Tampilan grafik bermasalah: ${error.message}. Tabel CSV tetap dimuat.`;}}
- ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
- downloadCsv.onclick=download;downloadCsv2.onclick=download;
- dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
-const clock = document.querySelector('.clock');
-
-if (clock) {
-    clock.textContent = new Date().toLocaleTimeString('en-GB', {
-        hour12: false
-    });
-
-    setInterval(() => {
-        clock.textContent = new Date().toLocaleTimeString('en-GB', {
-            hour12: false
-        });
-    }, 1000);
+ if(!rows.length){['kpis','charts','tableHead','tableBody','dataHead','dataBody'].forEach(id=>document.getElementById(id).innerHTML='');notice.hidden=false;notice.classList.add('is-warning');notice.textContent=mode==='sgw'?'Raw Data SGW belum tersedia. Tambahkan nama file ke sgw_files di data/manifest.json.':'Raw Data Wilayah belum tersedia.';document.getElementById('regionDateCaption').textContent='Tidak ada data untuk sumber yang dipilih.';return}
+ const min=rows[0].dt,max=rows[rows.length-1].dt,minDate=isoDate(min),maxDate=isoDate(max);
+ dateFrom.value=minDate;dateTo.value=maxDate;compareFrom.min=compareTo.min=minDate;compareFrom.max=compareTo.max=maxDate;compareFrom.value=minDate;compareTo.value=maxDate;
+ circle.innerHTML='<option value="ALL">All Circle</option>'+unique('CIRCLE').map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');refreshDependent();
+ const sgwSelect=document.getElementById('sgwFilter'),old=sgwSelect.value;sgwSelect.innerHTML='<option value="ALL">All SGW</option>'+unique('SGW').map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');if(unique('SGW').includes(old))sgwSelect.value=old;
+ document.getElementById('compareDateGroup').hidden=!compare.checked;
+ renderTable(rows,'dataBody','dataHead',1000);update();
+ const info=datasetInfo[mode];notice.hidden=false;notice.classList.toggle('is-warning',info.warnings.length>0);notice.textContent='Data '+(mode==='sgw'?'SGW':'Wilayah')+' dimuat: '+info.loadedFiles.join(', ')+(info.warnings.length?'. Peringatan: '+info.warnings.join(' | '):'.');
 }
+function initializeDashboard(payload){
+ datasets={wilayah:payload.wilayah.data,sgw:payload.sgw.data};datasetInfo={wilayah:payload.wilayah,sgw:payload.sgw};
+ for(const mode of ['wilayah','sgw'])datasets[mode]=datasets[mode].map(r=>({...r,dt:parseDate(String(r['15 Minutes']),mode)})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
+ if(!datasets.wilayah.length&&!datasets.sgw.length)throw new Error('Tidak ada tanggal yang valid.');
+ if(!sourceInitialized){
+  enhanceLocationFilters();
+  document.getElementById('dataSource').onchange=e=>activateDataSource(e.target.value);
+  ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
+  downloadCsv.onclick=download;downloadCsv2.onclick=download;
+  dataSearch.oninput=()=>{const q=dataSearch.value.toLowerCase();renderTable(rows.filter(r=>Object.values(r).some(v=>String(v).toLowerCase().includes(q))),'dataBody','dataHead',1000)};
+  sourceInitialized=true;
+ }
+ const first=datasets.wilayah.length?'wilayah':'sgw';document.getElementById('dataSource').value=first;activateDataSource(first);
+ const clock=document.querySelector('.clock');if(clock){clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false});setInterval(()=>{clock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);}
 }
 initNav();
 loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);const notice=document.getElementById('csvLoadNotice');if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent=`Data CSV belum berhasil dimuat: ${error.message}`;}document.getElementById('regionDateCaption').textContent='Network Map dapat dibuka, tetapi data belum tersedia.';});
