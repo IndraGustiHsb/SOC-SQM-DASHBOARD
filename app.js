@@ -17,7 +17,7 @@ const specs=[
 const metricKeys=specs.map(s=>s.source);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)return new Date(NaN);const iso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));const m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(!m)return new Date(s);const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));}
+function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)return new Date(NaN);if(/^\u005cd{4}-\u005cd{2}-\u005cd{2}T.*(?:Z|[+-]\u005cd{2}:?\u005cd{2})$/i.test(s))return new Date(s);const iso=s.match(/^(\u005cd{4})-(\u005cd{1,2})-(\u005cd{1,2})(?:[ T](\u005cd{1,2}):(\u005cd{2})(?::(\u005cd{2}))?)?/);if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));const m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(!m)return new Date(s);const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));}
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const raw=r[key];const v=raw===null||raw===undefined||raw===''?0:Number(raw);if(!Number.isFinite(v))return 0;if(key==='Total Traffic(Byte)')return dataMode==='wilayah'?v/TRAFFIC_DIVISOR:v;return v}
@@ -40,8 +40,8 @@ function normalizeLocationHierarchy(data){
    :row;
  });
 }
-function unique(field){return [...new Set(rows.map(r=>r[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
-function fillSelect(id,vals){const el=document.getElementById(id), old=el.value;el.innerHTML='<option value="ALL">All '+(id==='region'?'Region':id==='circle'?'Circle':id==='branch'?'Branch':'Kabupaten')+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(vals.includes(old))el.value=old}
+function unique(field){return [...new Set(rows.map(r=>String(r[field]??'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
+function fillSelect(id,vals){const el=document.getElementById(id),old=el.value;el.innerHTML='<option value="ALL">All '+(id==='region'?'Region':id==='circle'?'Circle':id==='branch'?'Branch':'Kabupaten')+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');el.value=vals.includes(old)?old:'ALL';}
 function refreshFilterPickers(){document.querySelectorAll('.filter-picker').forEach(picker=>picker._syncOptions?.())}
 function enhanceLocationFilters(){
  ['circle','region','branch','kabupaten'].forEach(id=>{
@@ -65,25 +65,27 @@ function setupFilters(){
  const min=rows[0].dt,max=rows[rows.length-1].dt,minDate=isoDate(min),maxDate=isoDate(max);dateFrom.value=minDate;dateTo.value=maxDate;document.getElementById('compareDateGroup').hidden=!compare.checked;document.getElementById('compareDays').value='1';circle.innerHTML='<option value="ALL">All Circle</option>'+unique('CIRCLE').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');refreshDependent();
  ['dateFrom','dateTo','period','circle','region','branch','kabupaten','sgwFilter','compare','compareDays'].forEach(id=>{const el=document.getElementById(id);el.onchange=()=>{if(['circle','region','branch'].includes(id))refreshDependent();if(id==='compare')document.getElementById('compareDateGroup').hidden=!compare.checked;update()}});reset.onclick=()=>{dateFrom.value=minDate;dateTo.value=maxDate;period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;document.getElementById('compareDays').value='1';document.getElementById('compareDateGroup').hidden=true;sgwFilter.value='ALL';refreshDependent();update()};
 }
+function filterValue(id){return document.getElementById(id)?.value??'ALL'}
+function matchesLocationFilters(row){return ['circle','region','branch','kabupaten'].every(id=>{const selected=filterValue(id);return selected==='ALL'||String(row[id.toUpperCase()]??'').trim()===selected})}
+function matchesActiveFilters(row){return dataMode==='sgw'?(filterValue('sgwFilter')==='ALL'||String(row.SGW??'').trim()===filterValue('sgwFilter')):matchesLocationFilters(row)}
 function refreshDependent(){
- let f=rows.filter(x=>circle.value==='ALL'||x.CIRCLE===circle.value);
- fillSelect('region',uniqueFrom(f,'REGION'));
- f=f.filter(x=>region.value==='ALL'||x.REGION===region.value);
- fillSelect('branch',uniqueFrom(f,'BRANCH'));
- f=f.filter(x=>branch.value==='ALL'||x.BRANCH===branch.value);
- fillSelect('kabupaten',uniqueFrom(f,'KABUPATEN'));
- refreshFilterPickers();
+ let subset=rows.filter(x=>filterValue('circle')==='ALL'||String(x.CIRCLE??'').trim()===filterValue('circle'));
+ fillSelect('region',uniqueFrom(subset,'REGION'));
+ subset=subset.filter(x=>filterValue('region')==='ALL'||String(x.REGION??'').trim()===filterValue('region'));
+ fillSelect('branch',uniqueFrom(subset,'BRANCH'));
+ subset=subset.filter(x=>filterValue('branch')==='ALL'||String(x.BRANCH??'').trim()===filterValue('branch'));
+ fillSelect('kabupaten',uniqueFrom(subset,'KABUPATEN'));
 }
-function uniqueFrom(arr,field){return [...new Set(arr.map(x=>x[field]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)))}
+function uniqueFrom(arr,field){return [...new Set(arr.map(x=>String(x[field]??'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function filtered(fromValue=dateFrom.value,toValue=dateTo.value){
  const from=new Date(fromValue+'T00:00:00'),to=new Date(toValue+'T23:59:59');
- return rows.filter(r=>r.dt>=from&&r.dt<=to&&(dataMode==='sgw'?(sgwFilter.value==='ALL'||r.SGW===sgwFilter.value):(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value)));
+ return rows.filter(r=>r.dt>=from&&r.dt<=to&&matchesActiveFilters(r));
 }
 function bucket(r){const p=period.value;if(p==='daily')return isoDate(r.dt);if(p==='hourly'){const d=new Date(r.dt);d.setMinutes(0,0,0);return d.toISOString()}return r.dt.toISOString()}
 function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>x[key]/=x.n);return x})}
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
 function shiftDateByDays(date,days){const shifted=new Date(date.getTime());shifted.setDate(shifted.getDate()+days);return shifted;}
-function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&(dataMode==='sgw'?(sgwFilter.value==='ALL'||r.SGW===sgwFilter.value):(region.value==='ALL'||r.REGION===region.value)&&(circle.value==='ALL'||r.CIRCLE===circle.value)&&(branch.value==='ALL'||r.BRANCH===branch.value)&&(kabupaten.value==='ALL'||r.KABUPATEN===kabupaten.value)));}
+function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&matchesActiveFilters(r));}
 function localDayNumber(value){let d;if(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}/.test(value)){const [y,m,day]=value.slice(0,10).split('-').map(Number);d=new Date(y,m-1,day);}else d=new Date(value);return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000;}
 function pointOffset(point,anchor,daily){if(daily)return localDayNumber(point.k)-localDayNumber(anchor);return Math.round((new Date(point.k).getTime()-new Date(anchor).getTime())/60000);}
 function compareSeries(current,comparison,key){if(!current.length)return[];if(!comparison.length||!activeCurrentWindow||!activeCompareWindow)return current.map(()=>null);const daily=period.value==='daily',lookup=new Map();comparison.forEach(point=>lookup.set(pointOffset(point,activeCompareWindow.start,daily),point[key]??null));return current.map(point=>{const offset=pointOffset(point,activeCurrentWindow.start,daily);return lookup.has(offset)?lookup.get(offset):null;});}
@@ -377,7 +379,6 @@ function initializeDashboard(payload){
  // Data utama berasal dari Supabase; localStorage tidak lagi menjadi sumber dataset.
  if(!datasets.wilayah.length&&!datasets.sgw.length)throw new Error('Tidak ada tanggal yang valid.');
  if(!sourceInitialized){
-  enhanceLocationFilters();
   document.getElementById('dataSource').onchange=e=>activateDataSource(e.target.value);
   ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
   downloadCsv.onclick=download;downloadCsv2.onclick=download;
