@@ -162,3 +162,25 @@
 .filters label[hidden],#sgwFilterLabel[hidden]{display:none!important}
 #dataSource{border-color:#168fff}
 .nav-btn:disabled{opacity:.35;cursor:not-allowed}
+
+
+/* CSV upload panel */
+.upload-panel{margin:0 0 16px;padding:16px;border:1px solid #145078;border-radius:10px;background:linear-gradient(135deg,rgba(7,39,64,.96),rgba(4,23,42,.96));}
+.upload-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.upload-heading h3{margin:0 0 5px;color:#e8f6ff;font-size:15px}
+.upload-heading p{margin:0;color:#83aeca;font-size:11px;line-height:1.5}
+.upload-mode-tag{padding:6px 9px;border:1px solid #167e75;border-radius:5px;color:#70e3c2;font-size:9px;font-weight:700;letter-spacing:.08em;white-space:nowrap}
+.upload-controls{display:grid;grid-template-columns:minmax(190px,1fr) minmax(190px,1.2fr) auto auto;align-items:end;gap:10px}
+.upload-controls label{display:flex;flex-direction:column;gap:6px;color:#8dc0e6;font-size:11px}
+.upload-controls select,.upload-controls input[type=file]{width:100%;min-width:0;min-height:36px;padding:8px;background:#04172b;border:1px solid #075083;border-radius:6px;color:#eaf6ff;font-size:11px}
+.upload-controls input[type=file]{padding:6px}
+.upload-primary{border-color:#087b69;background:#087b69;color:#fff}
+.upload-primary:disabled{opacity:.4;cursor:not-allowed}
+.upload-status{margin-top:12px;padding:9px 11px;border:1px solid rgba(44,117,154,.5);border-radius:6px;background:rgba(5,26,45,.7);color:#9cc4dd;font-size:10px;line-height:1.5}
+.upload-status.is-success{border-color:#147b5d;color:#8bf0c3;background:rgba(7,67,49,.35)}
+.upload-status.is-error{border-color:#a64b43;color:#ffb0a8;background:rgba(90,26,26,.28)}
+.upload-preview{margin-top:12px;max-height:240px;overflow:auto;border:1px solid rgba(22,85,122,.6);border-radius:6px}
+.upload-preview table{min-width:650px;font-size:10px}
+.upload-preview th{position:sticky;top:0}
+@media(max-width:850px){.upload-controls{grid-template-columns:1fr 1fr}.upload-controls button{min-height:36px}}
+@media(max-width:520px){.upload-controls{grid-template-columns:1fr}.upload-heading{flex-direction:column}.upload-mode-tag{align-self:flex-start}}
