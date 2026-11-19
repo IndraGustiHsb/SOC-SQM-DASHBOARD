@@ -226,7 +226,7 @@ const DB_FIELDS={
  sgw:{'Total Traffic(Byte)':'total_traffic_tb','Downlink TCP Retransmission Rate(%)':'downlink_tcp_retransmission_rate','Uplink TCP Retransmission Rate(%)':'uplink_tcp_retransmission_rate','TCP Connection Success Rate (Included RST)(%)':'tcp_connection_success_rate','Downlink TCP Packet Loss Rate(%)':'downlink_tcp_packet_loss_rate','Uplink TCP Packet Loss Rate(%)':'uplink_tcp_packet_loss_rate','E2E Delay(ms)':'e2e_delay_ms','SYN ACK-ACK Delay(ms)':'syn_ack_ack_delay_ms','SYN-SYN ACK Delay(ms)':'syn_syn_ack_delay_ms'}
 };
 function toDatabaseRow(row,mode,batchId){
- const out={batch_id:batchId,fifteen_minutes:row.dt.toISOString()};
+ const timestamp=row.dt instanceof Date?row.dt:parseDate(String(row['15 Minutes']),mode);if(!Number.isFinite(timestamp.getTime()))throw new Error('Tanggal tidak valid pada data '+mode.toUpperCase()+'.');const out={batch_id:batchId,fifteen_minutes:timestamp.toISOString()};
  if(mode==='wilayah'){out.region=row.REGION||null;out.branch=row.BRANCH||null;out.kabupaten=row.KABUPATEN||null;out.circle=row.CIRCLE||null;}
  else out.sgw=row.SGW||null;
  Object.entries(DB_FIELDS[mode]).forEach(([source,target])=>{const v=row[source];out[target]=v===''||v===undefined||v===null?null:Number(v);if(out[target]!==null&&!Number.isFinite(out[target]))out[target]=null;});
