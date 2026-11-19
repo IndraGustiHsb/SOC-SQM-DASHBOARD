@@ -17,7 +17,17 @@ const specs=[
 const metricKeys=specs.map(s=>s.source);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)return new Date(NaN);if(/^\u005cd{4}-\u005cd{2}-\u005cd{2}T.*(?:Z|[+-]\u005cd{2}:?\u005cd{2})$/i.test(s))return new Date(s);const iso=s.match(/^(\u005cd{4})-(\u005cd{1,2})-(\u005cd{1,2})(?:[ T](\u005cd{1,2}):(\u005cd{2})(?::(\u005cd{2}))?)?/);if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));const m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(!m)return new Date(s);const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));}
+function parseDate(value,mode=dataMode){
+ const s=String(value??'').trim();if(!s)return new Date(NaN);
+ // Supabase returns ISO timestamps with a timezone; preserve the actual instant.
+ if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*(?:Z|[+-][0-9]{2}:?[0-9]{2})$/i.test(s))return new Date(s);
+ const iso=s.match(/^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
+ if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));
+ const m=s.match(/^([0-9]{1,2})[\/.-]([0-9]{1,2})[\/.-]([0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
+ if(!m)return new Date(s);
+ const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;
+ return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));
+}
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const raw=r[key];const v=raw===null||raw===undefined||raw===''?0:Number(raw);if(!Number.isFinite(v))return 0;if(key==='Total Traffic(Byte)')return dataMode==='wilayah'?v/TRAFFIC_DIVISOR:v;return v}
