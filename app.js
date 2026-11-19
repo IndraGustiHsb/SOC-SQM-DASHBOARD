@@ -20,7 +20,7 @@ function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)r
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const v=Number(r[key]??0);if(key==='Total Traffic(Byte)')return dataMode==='wilayah'?v/TRAFFIC_DIVISOR:v;return Number.isFinite(v)?v:0}
-function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB';s.format=v=>v.toLocaleString('en-US',{maximumFractionDigits:3});}
+function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB';s.format=v=>v.toLocaleString('en-US',{maximumFractionDigits:12});const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic ('+s.unit+')';}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
 function normalizeLocationHierarchy(data){
  const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
