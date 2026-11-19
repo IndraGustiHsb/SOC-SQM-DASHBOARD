@@ -199,3 +199,82 @@
 .logout-btn{margin-left:12px;border:1px solid #174968;background:rgba(0,135,190,.12);color:#8edbff;border-radius:4px;padding:6px 9px;font-size:9px;letter-spacing:1px;cursor:pointer}.logout-btn:hover{border-color:#1bbafa;color:#fff}
 @media(max-width:800px){.login-screen{padding:28px 20px}.login-main{grid-template-columns:1fr;gap:16px}.login-visual{padding:0}.login-visual h1{font-size:36px;margin:15px 0 9px}.login-visual>p{font-size:11px}.network-visual{height:175px;margin:5px 0}.ring-a{width:140px;height:140px}.ring-b{width:230px;height:230px}.network-core{width:65px;height:65px}.login-feature-row{display:none}.login-card{justify-self:center;max-width:470px;padding:24px;margin-top:0}.login-card-title{margin:18px 0}.login-card-title h2{font-size:24px}.login-brand{margin-bottom:23px}.login-footer{margin-top:22px;flex-wrap:wrap}.login-footer span:last-child{display:none}}
 @media(max-width:440px){.login-screen{padding:22px 15px}.login-visual h1{font-size:30px}.network-visual{height:145px}.login-card{padding:21px 18px}.login-footer{font-size:7px}.login-brand{margin-bottom:17px}}
+
+
+/* ===== AI Communication Center visual upgrade ===== */
+.login-screen{
+ background:
+  radial-gradient(ellipse at 17% 78%,rgba(0,225,255,.17),transparent 34%),
+  radial-gradient(ellipse at 83% 18%,rgba(168,65,255,.22),transparent 38%),
+  radial-gradient(ellipse at 58% 88%,rgba(255,35,151,.10),transparent 32%),
+  linear-gradient(135deg,#020817 0%,#06152d 48%,#08091d 100%);
+}
+.login-grid{background-image:linear-gradient(rgba(57,177,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(57,177,255,.09) 1px,transparent 1px);background-size:38px 38px;mask-image:radial-gradient(ellipse at 50% 48%,#000 10%,transparent 82%)}
+.login-orbit{border-color:rgba(108,94,255,.22)}
+.orbit-one{border-color:rgba(0,220,255,.16);box-shadow:0 0 110px rgba(0,195,255,.12),inset 0 0 90px rgba(139,75,255,.07)}
+.orbit-two{border-color:rgba(207,75,255,.28)}
+.login-brand{margin-bottom:30px}
+.login-logo{border-color:rgba(0,225,255,.55);background:linear-gradient(145deg,rgba(0,211,255,.16),rgba(147,64,255,.14));box-shadow:0 0 24px rgba(0,194,255,.13)}
+.login-logo span{background:linear-gradient(180deg,#6af7ff,#7b5cff);box-shadow:0 0 12px #00cfff}
+.login-brand strong{background:linear-gradient(90deg,#fff,#68eaff 55%,#c38aff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.login-brand strong span{color:#f45bdb}
+.visual-eyebrow{color:#8ddfff}
+.visual-eyebrow i{background:#55f5d0;box-shadow:0 0 14px #55f5d0}
+.login-visual h1{background:linear-gradient(95deg,#fff 8%,#6cecff 47%,#b78aff 82%,#ff80d2);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 35px rgba(0,191,255,.10)}
+.login-visual>p{color:#9bbbd8}
+.network-visual{height:290px;max-width:540px;margin:8px 0 4px;background:radial-gradient(ellipse at center,rgba(0,215,255,.18),rgba(114,66,255,.08) 36%,transparent 70%)}
+.network-ring{border-color:rgba(0,218,255,.35);box-shadow:0 0 25px rgba(0,191,255,.08)}
+.ring-a{width:210px;height:210px}
+.ring-b{width:315px;height:315px;border-color:rgba(190,82,255,.30)}
+.network-node{background:#75f7ff;box-shadow:0 0 16px #00d9ff}
+.node-b,.node-d{background:#e58bff;box-shadow:0 0 16px #b65cff}
+.network-link{background:linear-gradient(90deg,transparent,#00eaff,#a56aff,transparent);height:2px}
+.ai-hologram{position:absolute;z-index:3;left:50%;top:46%;width:190px;height:220px;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 22px rgba(0,205,255,.30))}
+.ai-halo{position:absolute;left:50%;top:50%;border:1px solid rgba(0,224,255,.45);border-radius:50%;transform:translate(-50%,-50%)}
+.halo-outer{width:184px;height:184px;border-style:dashed;animation:orbitSpin 28s linear infinite}
+.halo-inner{width:145px;height:145px;border-color:rgba(198,95,255,.55);box-shadow:0 0 28px rgba(148,77,255,.16),inset 0 0 25px rgba(0,215,255,.12);animation:haloPulse 3s ease-in-out infinite}
+.ai-robot{position:relative;z-index:2;width:100px;height:150px;display:flex;align-items:center;flex-direction:column;filter:drop-shadow(0 0 12px rgba(0,212,255,.28))}
+.robot-antenna{height:15px;width:2px;background:linear-gradient(#e9a2ff,#42edff);position:relative}
+.robot-antenna:before{content:"";position:absolute;width:8px;height:8px;left:-3px;top:-5px;border-radius:50%;background:#ff80dc;box-shadow:0 0 13px #ff52d4}
+.robot-head{position:relative;width:78px;height:61px;border:2px solid #63eaff;border-radius:24px 24px 19px 19px;background:linear-gradient(145deg,rgba(29,73,112,.98),rgba(15,20,58,.98));box-shadow:inset 0 0 18px rgba(0,224,255,.25),0 0 22px rgba(0,202,255,.22)}
+.robot-head:after{content:"";position:absolute;inset:5px;border:1px solid rgba(189,124,255,.55);border-radius:17px 17px 13px 13px;pointer-events:none}
+.robot-ear{position:absolute;top:19px;width:8px;height:22px;border:1px solid #b87bff;background:#173d70;box-shadow:0 0 12px #a45cff}
+.ear-left{left:-8px;border-radius:5px 0 0 5px}.ear-right{right:-8px;border-radius:0 5px 5px 0}
+.robot-eyes{position:absolute;z-index:2;top:24px;left:17px;right:17px;display:flex;justify-content:space-between}
+.robot-eyes i{width:11px;height:7px;border-radius:8px;background:#74faff;box-shadow:0 0 12px #00eaff;animation:robotBlink 4s infinite}
+.robot-eyes i:last-child{animation-delay:.12s}
+.robot-mouth{position:absolute;z-index:2;bottom:12px;left:32px;width:14px;height:3px;border-radius:5px;background:#d38aff;box-shadow:0 0 8px #b76aff}
+.robot-neck{height:9px;width:25px;background:linear-gradient(90deg,#3975a7,#8b68da,#42dfea)}
+.robot-body{width:91px;height:59px;border:2px solid #48d9ef;border-radius:20px 20px 12px 12px;background:linear-gradient(145deg,#174c78,#111a42 72%);box-shadow:inset 0 0 18px rgba(0,217,255,.2);display:grid;place-items:center}
+.robot-chest{width:34px;height:27px;border:1px solid #b27bff;border-radius:8px;display:grid;place-items:center;color:#9cfaff;font-size:12px;font-weight:bold;letter-spacing:2px;text-shadow:0 0 9px #00dfff;box-shadow:0 0 13px rgba(160,91,255,.3)}
+.ai-scanline{position:absolute;z-index:4;left:35px;right:35px;top:50%;height:1px;background:linear-gradient(90deg,transparent,#5df6ff,transparent);box-shadow:0 0 12px #00eaff;animation:scanMove 3.8s ease-in-out infinite}
+.ai-label{position:absolute;z-index:5;color:#81cde8;font-size:7px;letter-spacing:1.4px;line-height:1.7}
+.ai-label b{display:block;color:#58f3ca;font-size:8px}
+.label-left{left:-45px;top:48px}.label-right{right:-63px;bottom:45px;text-align:right;color:#c09aff}
+@keyframes haloPulse{50%{transform:translate(-50%,-50%) scale(1.07);opacity:.65}}
+@keyframes robotBlink{0%,46%,50%,100%{transform:scaleY(1);opacity:1}48%{transform:scaleY(.12);opacity:.45}}
+@keyframes scanMove{0%,100%{transform:translateY(-65px);opacity:.2}50%{transform:translateY(65px);opacity:.9}}
+.login-feature-row b{color:#69eaff;text-shadow:0 0 10px rgba(0,220,255,.35)}
+.login-feature-row span{color:#9bafd0}
+.login-card{background:linear-gradient(145deg,rgba(10,29,59,.97),rgba(10,13,37,.98));border:1px solid rgba(111,104,255,.48);box-shadow:0 25px 90px rgba(0,0,0,.48),0 0 45px rgba(80,89,255,.10),inset 0 1px rgba(255,255,255,.08);backdrop-filter:blur(18px)}
+.login-card:before{height:2px;background:linear-gradient(90deg,transparent,#00eaff,#a65cff,#ff6acb,transparent)}
+.login-card-top{color:#a9b8e9}
+.lock-icon{color:#d39aff}
+.login-kicker{color:#69eaff}
+.login-card-title h2{color:#f4f7ff}
+.login-card-title p{color:#9baed0}
+.login-form>label{color:#b1c1df}
+.login-input-wrap{border-color:#344a79;background:rgba(3,10,29,.8)}
+.login-input-wrap:focus-within{border-color:#65eaff;box-shadow:0 0 0 3px rgba(0,218,255,.13),0 0 18px rgba(0,218,255,.08)}
+.login-input-wrap>span{color:#77dcff}
+.login-input-wrap input{color:#f4f7ff}
+.password-toggle{color:#8edfff}
+.login-submit{border:1px solid rgba(104,239,255,.75);background:linear-gradient(100deg,#087fc4,#5755db 58%,#a33ec4);box-shadow:0 8px 28px rgba(75,89,255,.25),0 0 18px rgba(0,208,255,.12)}
+.login-submit:hover{filter:brightness(1.2);box-shadow:0 10px 32px rgba(104,81,255,.35)}
+.login-security{border-color:rgba(139,142,255,.22);color:#91a6ca}
+.login-security span{color:#77eaff}
+.login-footer{border-color:rgba(115,130,207,.25);color:#8294bc}
+.login-footer i{background:#63f4ce;box-shadow:0 0 12px #63f4ce}
+@media(max-width:800px){.network-visual{height:185px}.ai-hologram{transform:translate(-50%,-50%) scale(.78)}.label-left{left:-24px}.label-right{right:-37px}}
+@media(max-width:440px){.network-visual{height:155px}.ai-hologram{transform:translate(-50%,-50%) scale(.66)}.ai-label{font-size:6px}.label-left{left:-13px}.label-right{right:-20px}}
+@media(prefers-reduced-motion:reduce){.login-screen *, .login-screen *:before,.login-screen *:after{animation:none!important;transition:none!important}}
