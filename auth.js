@@ -2,7 +2,7 @@
   'use strict';
   const SUPABASE_URL = 'https://bjylmkixcgdifmdpxicc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_ouHhFZpuHKocinw_U8JN2Q_IibBN-zj';
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const client = window.socSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const loginScreen = document.getElementById('loginScreen');
   const appShell = document.getElementById('appShell');
   const form = document.getElementById('loginForm');
