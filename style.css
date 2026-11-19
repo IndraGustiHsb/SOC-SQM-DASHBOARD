@@ -310,3 +310,123 @@
 @media(max-width:800px){.ai-hologram{transform:translate(-50%,-50%) scale(.82)}}
 @media(max-width:440px){.ai-hologram{transform:translate(-50%,-50%) scale(.68)}}
 @media(prefers-reduced-motion:reduce){.robot-illustration,.bot-head,.bot-body,.bot-antenna,.bot-eyes,.bot-spark{animation:none!important}}
+
+
+/* ===== SOC AI gateway: right-side access + expanded motion field ===== */
+.login-screen{
+  padding:34px 3.2vw;
+  background:
+    radial-gradient(ellipse at 24% 50%,rgba(0,225,255,.23),transparent 38%),
+    radial-gradient(ellipse at 72% 15%,rgba(163,68,255,.25),transparent 35%),
+    radial-gradient(ellipse at 82% 88%,rgba(255,55,181,.16),transparent 32%),
+    linear-gradient(125deg,#010713 0%,#06162e 48%,#08071c 100%);
+}
+.login-shell{width:min(1500px,100%)}
+.login-brand{margin-bottom:18px}
+.login-main{
+  grid-template-columns:minmax(0,1fr) minmax(390px,440px);
+  gap:clamp(24px,4vw,72px);
+  min-height:min(690px,calc(100vh - 155px));
+}
+.login-visual{position:relative;min-width:0}
+.login-visual h1{font-size:clamp(42px,5vw,72px);max-width:760px}
+.login-visual>p{font-size:15px;max-width:560px}
+.network-visual{
+  height:clamp(390px,48vh,520px);
+  max-width:760px;
+  margin:0 auto;
+  overflow:visible;
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(0,226,255,.24),rgba(123,62,255,.12) 34%,transparent 70%);
+}
+.network-ring{top:50%;border-width:2px}
+.ring-a{width:330px;height:330px}
+.ring-b{width:490px;height:490px}
+.ai-hologram{
+  width:370px;height:390px;top:49%;
+  filter:drop-shadow(0 0 38px rgba(0,210,255,.52));
+}
+.robot-illustration{
+  width:330px;height:385px;
+  animation:botHover 3.8s ease-in-out infinite,robotTilt 8s ease-in-out infinite;
+  filter:drop-shadow(0 0 22px rgba(0,214,255,.55));
+}
+.ai-halo.halo-outer{width:350px;height:350px;border-width:2px}
+.ai-halo.halo-inner{width:280px;height:280px}
+.ai-scanline{left:-35px;right:-35px;height:3px;box-shadow:0 0 25px #00eaff}
+.network-node{width:13px;height:13px;box-shadow:0 0 22px #00dfff}
+.node-a{left:8%;top:22%}.node-b{left:84%;top:17%}
+.node-c{left:91%;top:72%}.node-d{left:8%;top:78%}.node-e{left:48%;top:0}
+.network-link{height:2px;opacity:.95}
+.visual-caption{bottom:0;font-size:9px}
+.login-feature-row{gap:clamp(22px,4vw,58px);margin-top:12px}
+.login-feature-row div{padding:9px 13px;border:1px solid rgba(73,203,255,.19);border-radius:9px;background:rgba(4,25,51,.44);box-shadow:0 0 22px rgba(0,190,255,.06)}
+.login-card{
+  justify-self:end;
+  align-self:center;
+  width:min(100%,440px);
+  padding:36px 34px 27px;
+  border-radius:20px;
+  box-shadow:0 28px 100px rgba(0,0,0,.58),0 0 55px rgba(68,102,255,.2),inset 0 1px rgba(255,255,255,.12);
+  animation:cardArrive 1s cubic-bezier(.2,.8,.2,1) both,cardAura 5s ease-in-out infinite;
+}
+.login-card-title h2{font-size:34px}
+.login-input-wrap{height:52px;border-radius:9px}
+.login-submit{
+  height:54px;border-radius:9px;
+  justify-content:center;gap:24px;
+  font-size:12px;letter-spacing:2px;
+}
+.login-submit b{position:absolute;right:17px}
+.login-footer{margin-top:16px}
+.login-screen:before,.login-screen:after{
+  content:"";position:absolute;pointer-events:none;z-index:-1;border-radius:50%;
+  width:520px;height:520px;border:1px solid rgba(0,220,255,.12);
+  box-shadow:0 0 80px rgba(0,190,255,.08),inset 0 0 70px rgba(160,70,255,.06);
+  animation:backgroundOrbit 32s linear infinite;
+}
+.login-screen:before{left:-280px;top:18%}
+.login-screen:after{right:-300px;bottom:-28%;width:680px;height:680px;border-color:rgba(212,85,255,.16);animation-direction:reverse}
+.login-visual:before{
+  content:"";position:absolute;inset:4% -3% 0 -4%;pointer-events:none;z-index:-1;
+  background:repeating-linear-gradient(115deg,transparent 0 48px,rgba(0,211,255,.045) 49px 50px,transparent 51px 100px);
+  mask-image:linear-gradient(90deg,transparent,#000 30%,#000 75%,transparent);
+  animation:lightSweep 9s linear infinite;
+}
+.ai-hologram:before,.ai-hologram:after{
+  content:"";position:absolute;left:50%;top:50%;border-radius:50%;pointer-events:none;
+  transform:translate(-50%,-50%);
+}
+.ai-hologram:before{width:430px;height:430px;border:1px dashed rgba(91,226,255,.42);animation:backgroundOrbit 18s linear infinite}
+.ai-hologram:after{width:470px;height:470px;border:1px solid rgba(198,100,255,.2);border-left-color:transparent;border-right-color:transparent;animation:backgroundOrbit 12s linear infinite reverse}
+@keyframes robotTilt{0%,100%{rotate:-1deg}50%{rotate:1.5deg}}
+@keyframes backgroundOrbit{to{transform:rotate(360deg)}}
+@keyframes lightSweep{0%{transform:translateX(-8%);opacity:.3}50%{opacity:1}100%{transform:translateX(8%);opacity:.3}}
+@keyframes cardAura{0%,100%{box-shadow:0 28px 100px rgba(0,0,0,.58),0 0 35px rgba(68,102,255,.14),inset 0 1px rgba(255,255,255,.12)}50%{box-shadow:0 28px 100px rgba(0,0,0,.58),0 0 65px rgba(0,205,255,.25),inset 0 1px rgba(255,255,255,.12)}}
+@media(max-width:1000px){
+  .login-main{grid-template-columns:minmax(0,1fr) minmax(330px,390px);gap:20px}
+  .network-visual{height:360px}
+  .ai-hologram{transform:translate(-50%,-50%) scale(.82)}
+  .ring-a{width:260px;height:260px}.ring-b{width:380px;height:380px}
+}
+@media(max-width:800px){
+  .login-screen{padding:24px 18px}
+  .login-main{grid-template-columns:1fr;min-height:0;gap:12px}
+  .login-visual h1{font-size:clamp(34px,8vw,48px)}
+  .network-visual{height:300px;max-width:560px}
+  .ai-hologram{transform:translate(-50%,-50%) scale(.72)}
+  .login-card{justify-self:end;max-width:480px;margin:0 0 0 auto}
+  .login-feature-row{display:flex;flex-wrap:wrap;gap:8px}
+  .login-feature-row div{padding:7px 9px}
+}
+@media(max-width:520px){
+  .network-visual{height:235px}
+  .ai-hologram{transform:translate(-50%,-50%) scale(.58)}
+  .ring-a{width:180px;height:180px}.ring-b{width:260px;height:260px}
+  .login-card{padding:24px 20px}
+  .login-card-title h2{font-size:27px}
+  .login-feature-row{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .login-screen:before,.login-screen:after,.login-visual:before,.ai-hologram:before,.ai-hologram:after,.robot-illustration,.login-card{animation:none!important}
+}
