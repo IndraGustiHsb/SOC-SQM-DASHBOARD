@@ -197,7 +197,7 @@ function initNav(){
   if(view==='dashboard')setTimeout(()=>Object.values(charts).forEach(chart=>chart?.resize()),50);
  }));
 }
-function loadCsvFiles(){
+function loadLegacyCsvFiles(){
  return fetch(`data/manifest.json?v=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Manifest tidak dapat dimuat: HTTP '+r.status);return r.json()}).then(async manifest=>{
   const groups={wilayah:Array.isArray(manifest.wilayah_files)?manifest.wilayah_files:(manifest.files||[]),sgw:Array.isArray(manifest.sgw_files)?manifest.sgw_files:[]};
   const read=async(mode,files)=>{
@@ -219,6 +219,59 @@ function loadCsvFiles(){
   return {wilayah,sgw};
  });
 }
+
+function supabaseClient(){if(!window.socSupabase)throw new Error('Sesi Supabase belum siap. Silakan login ulang.');return window.socSupabase;}
+const DB_FIELDS={
+ wilayah:{'Total Traffic(Byte)':'total_traffic_byte','Downlink TCP Retransmission Rate(%)':'downlink_tcp_retransmission_rate','Uplink TCP Retransmission Rate(%)':'uplink_tcp_retransmission_rate','TCP Connection Success Rate (Included RST)(%)':'tcp_connection_success_rate_included_rst','Downlink TCP Packet Loss Rate(%)':'downlink_tcp_packet_loss_rate','Uplink TCP Packet Loss Rate(%)':'uplink_tcp_packet_loss_rate','E2E Delay(ms)':'e2e_delay_ms','SYN ACK-ACK Delay(ms)':'syn_ack_ack_delay_ms','SYN-SYN ACK Delay(ms)':'syn_syn_ack_delay_ms'},
+ sgw:{'Total Traffic(Byte)':'total_traffic_tb','Downlink TCP Retransmission Rate(%)':'downlink_tcp_retransmission_rate','Uplink TCP Retransmission Rate(%)':'uplink_tcp_retransmission_rate','TCP Connection Success Rate (Included RST)(%)':'tcp_connection_success_rate','Downlink TCP Packet Loss Rate(%)':'downlink_tcp_packet_loss_rate','Uplink TCP Packet Loss Rate(%)':'uplink_tcp_packet_loss_rate','E2E Delay(ms)':'e2e_delay_ms','SYN ACK-ACK Delay(ms)':'syn_ack_ack_delay_ms','SYN-SYN ACK Delay(ms)':'syn_syn_ack_delay_ms'}
+};
+function toDatabaseRow(row,mode,batchId){
+ const timestamp=row.dt instanceof Date?row.dt:parseDate(String(row['15 Minutes']),mode);if(!Number.isFinite(timestamp.getTime()))throw new Error('Tanggal tidak valid pada data '+mode.toUpperCase()+'.');const out={batch_id:batchId,fifteen_minutes:timestamp.toISOString()};
+ if(mode==='wilayah'){out.region=row.REGION||null;out.branch=row.BRANCH||null;out.kabupaten=row.KABUPATEN||null;out.circle=row.CIRCLE||null;}
+ else out.sgw=row.SGW||null;
+ Object.entries(DB_FIELDS[mode]).forEach(([source,target])=>{const v=row[source];out[target]=v===''||v===undefined||v===null?null:Number(v);if(out[target]!==null&&!Number.isFinite(out[target]))out[target]=null;});
+ return out;
+}
+function fromDatabaseRow(row,mode){
+ const out={'15 Minutes':row.fifteen_minutes,dt:parseDate(row.fifteen_minutes,mode)};
+ if(mode==='wilayah'){out.REGION=row.region||'';out.BRANCH=row.branch||'';out.KABUPATEN=row.kabupaten||'';out.CIRCLE=row.circle||'';}
+ else {out.SGW=row.sgw||'';out.REGION='';out.BRANCH='';out.KABUPATEN='';out.CIRCLE='';}
+ Object.entries(DB_FIELDS[mode]).forEach(([source,target])=>{out[source]=row[target]??0;});
+ return out;
+}
+async function readSupabaseRows(mode){
+ const table=mode==='wilayah'?'raw_data_wilayah':'raw_data_sgw',client=supabaseClient(),all=[];let from=0;
+ while(true){const {data,error}=await client.from(table).select('*').order('fifteen_minutes',{ascending:true}).range(from,from+999);if(error)throw error;if(!data?.length)break;all.push(...data);if(data.length<1000)break;from+=data.length;}
+ return all.map(row=>fromDatabaseRow(row,mode)).filter(row=>Number.isFinite(row.dt.getTime()));
+}
+async function writeSupabaseRows(mode,fileName,data){
+ const client=supabaseClient(),table=mode==='wilayah'?'raw_data_wilayah':'raw_data_sgw',conflict=mode==='wilayah'?'fifteen_minutes,circle,region,branch,kabupaten':'fifteen_minutes,sgw';
+ const {data:batch,error:batchError}=await client.from('upload_batches').insert({source_type:mode.toUpperCase(),file_name:fileName,total_rows:data.length,status:'PROCESSING'}).select('id').single();
+ if(batchError)throw batchError;
+ let inserted=0;
+ try{
+  const payload=data.map(row=>toDatabaseRow(row,mode,batch.id));
+  for(let i=0;i<payload.length;i+=500){
+   const {data:saved,error}=await client.from(table).upsert(payload.slice(i,i+500),{onConflict:conflict,ignoreDuplicates:true}).select('id');
+   if(error)throw error;inserted+=(saved||[]).length;
+  }
+  const {error:updateError}=await client.from('upload_batches').update({total_rows:inserted,status:'SUCCESS'}).eq('id',batch.id);
+  if(updateError)throw updateError;
+  return inserted;
+ }catch(error){
+  await client.from('upload_batches').update({total_rows:inserted,status:'FAILED'}).eq('id',batch.id);
+  throw error;
+ }
+}
+async function loadCsvFiles(){
+ const [wilayahRows,sgwRows]=await Promise.all([readSupabaseRows('wilayah'),readSupabaseRows('sgw')]);
+ if(wilayahRows.length||sgwRows.length)return {wilayah:{data:wilayahRows,warnings:[],loadedFiles:['Supabase Database']},sgw:{data:sgwRows,warnings:[],loadedFiles:['Supabase Database']}};
+ // First-time bootstrap: import existing repository CSVs once, then use Supabase as the source of truth.
+ const legacyData=await loadLegacyCsvFiles();
+ for(const mode of ['wilayah','sgw'])if(legacyData[mode].data.length)await writeSupabaseRows(mode,'Initial migration · '+legacyData[mode].loadedFiles.join(', '),legacyData[mode].data);
+ return legacyData;
+}
+
 function activateDataSource(mode){
  dataMode=mode;rows=datasets[mode]||[];setTrafficPresentation();
  document.querySelectorAll('.location-filter').forEach(el=>el.hidden=mode==='sgw');
@@ -282,26 +335,24 @@ function previewCsvUpload(){
   }catch(error){pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadPreview').hidden=true;uploadStatus(error.message,'error')}
  },error:error=>uploadStatus('Gagal membaca CSV: '+error.message,'error')});
 }
-function confirmCsvUpload(){
+
+async function confirmCsvUpload(){
  if(!pendingUpload)return;
  const {mode,fileName,data}=pendingUpload;
- const existing=datasets[mode]||[],seen=new Set(existing.map(r=>uploadDuplicateKey(r,mode)));
- let added=0,skipped=0;
- for(const row of data){const key=uploadDuplicateKey(row,mode);if(seen.has(key)){skipped++;continue}seen.add(key);existing.push(row);added++}
- existing.sort((a,b)=>a.dt-b.dt);datasets[mode]=existing;
- datasetInfo[mode]=datasetInfo[mode]||{warnings:[],loadedFiles:[]};
- datasetInfo[mode].loadedFiles=[...new Set([...(datasetInfo[mode].loadedFiles||[]),fileName])];
+ const button=document.getElementById('confirmUpload');button.disabled=true;button.textContent='Mengirim ke Supabase...';
+ uploadStatus('Mengirim '+data.length.toLocaleString('id-ID')+' baris ke database Supabase...','');
  try{
-  localStorage.setItem(uploadStorageKey(mode),JSON.stringify(existing.map(r=>({...r,dt:r.dt.toISOString()}))));
- }catch(error){
-  uploadStatus('Data ditambahkan ke dashboard, tetapi penyimpanan browser gagal (kemungkinan kapasitas penuh). Ekspor CSV sebagai cadangan.','error');
- }
- pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadFile').value='';
- document.getElementById('uploadPreview').hidden=true;
- const currentMode=document.getElementById('dataSource').value;
- if(currentMode===mode)activateDataSource(mode);
- uploadStatus('Selesai append: '+added.toLocaleString('id-ID')+' baris baru ditambahkan; '+skipped.toLocaleString('id-ID')+' duplikat dilewati. Tersimpan pada browser ini.','success');
+  const added=await writeSupabaseRows(mode,fileName,data),skipped=data.length-added;
+  pendingUpload=null;document.getElementById('uploadFile').value='';document.getElementById('uploadPreview').hidden=true;
+  const [wilayahRows,sgwRows]=await Promise.all([readSupabaseRows('wilayah'),readSupabaseRows('sgw')]);
+  datasets.wilayah=wilayahRows;datasets.sgw=sgwRows;
+  datasetInfo[mode]=datasetInfo[mode]||{warnings:[],loadedFiles:[]};datasetInfo[mode].loadedFiles=[...new Set([...(datasetInfo[mode].loadedFiles||[]),fileName])];
+  if(document.getElementById('dataSource').value===mode)activateDataSource(mode);
+  uploadStatus('Berhasil disimpan di Supabase: '+added.toLocaleString('id-ID')+' baris baru; '+skipped.toLocaleString('id-ID')+' duplikat dilewati. Data tersimpan di database dan dapat diakses setelah login dari perangkat lain.','success');
+ }catch(error){console.error('Supabase upload error:',error);uploadStatus('Upload ke Supabase gagal: '+(error.message||String(error)),'error');}
+ finally{button.disabled=!pendingUpload;button.textContent='＋ Tambahkan Data';}
 }
+
 function restoreBrowserUploads(){
  for(const mode of ['wilayah','sgw']){
   try{
@@ -318,7 +369,7 @@ function restoreBrowserUploads(){
 function initializeDashboard(payload){
  datasets={wilayah:payload.wilayah.data,sgw:payload.sgw.data};datasetInfo={wilayah:payload.wilayah,sgw:payload.sgw};
  for(const mode of ['wilayah','sgw'])datasets[mode]=datasets[mode].map(r=>({...r,dt:parseDate(String(r['15 Minutes']),mode)})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
- restoreBrowserUploads();
+ // Data utama berasal dari Supabase; localStorage tidak lagi menjadi sumber dataset.
  if(!datasets.wilayah.length&&!datasets.sgw.length)throw new Error('Tidak ada tanggal yang valid.');
  if(!sourceInitialized){
   enhanceLocationFilters();
