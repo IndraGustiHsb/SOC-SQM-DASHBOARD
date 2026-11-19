@@ -121,13 +121,13 @@
   <button id="previewUpload" class="btn" type="button">Periksa File</button>
   <button id="confirmUpload" class="btn upload-primary" type="button" disabled>＋ Tambahkan Data</button>
  </div>
- <div id="uploadStatus" class="upload-status" role="status">Data yang ditambahkan tersimpan pada browser ini. Upload belum dikirim ke Supabase/server.</div>
+ <div id="uploadStatus" class="upload-status" role="status">Data upload disimpan ke Supabase Database dengan mode APPEND dan pemeriksaan duplikat.</div>
  <div id="uploadPreview" class="upload-preview" hidden></div>
 </section>
 <div class="data-toolbar"><input id="dataSearch" placeholder="Search..."/><span id="dataCount"></span></div><div class="table-wrap large"><table><thead id="dataHead"></thead><tbody id="dataBody"></tbody></table></div></section>
       </section>
 
-      <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari daftar file pada <code>data/manifest.json</code>.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: GB (Byte ÷ 1.000.000.000) · SGW: TB</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
+      <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari Supabase Database setelah login.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: GB (Byte ÷ 1.000.000.000) · SGW: TB</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
     </main>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
