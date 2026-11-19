@@ -234,15 +234,103 @@ function activateDataSource(mode){
  renderTable(rows,'dataBody','dataHead',1000);update();
  const info=datasetInfo[mode];notice.hidden=false;notice.classList.toggle('is-warning',info.warnings.length>0);notice.textContent='Data '+(mode==='sgw'?'SGW':'Wilayah')+' dimuat: '+info.loadedFiles.join(', ')+(info.warnings.length?'. Peringatan: '+info.warnings.join(' | '):'.');
 }
+
+let pendingUpload=null;
+const uploadStorageKey=mode=>'soc_sqm_uploaded_'+mode+'_v1';
+function uploadStatus(message,type=''){
+ const el=document.getElementById('uploadStatus');if(!el)return;
+ el.textContent=message;el.classList.toggle('is-success',type==='success');el.classList.toggle('is-error',type==='error');
+}
+function normalizeUploadedRows(rawRows,mode){
+ const required=mode==='sgw'?['15 Minutes','SGW','Total Traffic(TB)']:['15 Minutes','REGION','BRANCH','KABUPATEN','CIRCLE','Total Traffic(Byte)'];
+ const headers=rawRows.meta?.fields||Object.keys(rawRows.data?.[0]||{});
+ const missing=required.filter(h=>!headers.includes(h));
+ if(missing.length)throw new Error('Kolom wajib tidak ditemukan: '+missing.join(', '));
+ let normalized=rawRows.data.filter(x=>x['15 Minutes']).map(x=>{
+  const row={...x};
+  if(mode==='sgw'){
+   row['Total Traffic(Byte)']=Number(x['Total Traffic(TB)']??0);
+   row['TCP Connection Success Rate (Included RST)(%)']=x['TCP Connection Success Rate(%)']??x['TCP Connection Success Rate (Included RST)(%)']??0;
+   ['REGION','BRANCH','KABUPATEN','CIRCLE'].forEach(k=>row[k]='');
+  }else row['TCP Connection Success Rate (Included RST)(%)']=x['TCP Connection Success Rate (Included RST)(%)']??x['TCP Connection Success Rate(%)']??0;
+  row.dt=parseDate(String(row['15 Minutes']),mode);
+  return row;
+ }).filter(r=>Number.isFinite(r.dt.getTime()));
+ if(mode==='wilayah')normalized=normalizeLocationHierarchy(normalized);
+ return normalized;
+}
+function uploadDuplicateKey(row,mode){
+ return [row.dt?.getTime()||'',mode==='sgw'?row.SGW:row.CIRCLE,row.REGION,row.BRANCH,row.KABUPATEN].map(v=>String(v??'').trim().toUpperCase()).join('|');
+}
+function renderUploadPreview(data){
+ const box=document.getElementById('uploadPreview');if(!box)return;
+ const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(TB)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)'];
+ box.hidden=false;
+ box.innerHTML='<div style="padding:8px 10px;color:#9fc9e5;font-size:10px">Pratinjau 5 baris pertama dari '+data.length.toLocaleString('id-ID')+' baris valid</div><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+data.slice(0,5).map(r=>'<tr>'+cols.map(c=>'<td>'+esc(r[c]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+function previewCsvUpload(){
+ const file=document.getElementById('uploadFile').files[0],mode=document.getElementById('uploadSource').value;
+ if(!file){uploadStatus('Pilih file CSV terlebih dahulu.','error');return}
+ if(!file.name.toLowerCase().endsWith('.csv')){uploadStatus('Format file harus CSV.','error');return}
+ Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:true,complete:result=>{
+  try{
+   if(result.errors?.length)throw new Error(result.errors[0].message);
+   const data=normalizeUploadedRows(result,mode);
+   if(!data.length)throw new Error('Tidak ada baris dengan tanggal valid pada file ini.');
+   pendingUpload={mode,fileName:file.name,data};
+   renderUploadPreview(data);
+   document.getElementById('confirmUpload').disabled=false;
+   uploadStatus('File valid: '+file.name+' · '+data.length.toLocaleString('id-ID')+' baris. Tekan “Tambahkan Data” untuk append.','success');
+  }catch(error){pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadPreview').hidden=true;uploadStatus(error.message,'error')}
+ },error:error=>uploadStatus('Gagal membaca CSV: '+error.message,'error')});
+}
+function confirmCsvUpload(){
+ if(!pendingUpload)return;
+ const {mode,fileName,data}=pendingUpload;
+ const existing=datasets[mode]||[],seen=new Set(existing.map(r=>uploadDuplicateKey(r,mode)));
+ let added=0,skipped=0;
+ for(const row of data){const key=uploadDuplicateKey(row,mode);if(seen.has(key)){skipped++;continue}seen.add(key);existing.push(row);added++}
+ existing.sort((a,b)=>a.dt-b.dt);datasets[mode]=existing;
+ datasetInfo[mode]=datasetInfo[mode]||{warnings:[],loadedFiles:[]};
+ datasetInfo[mode].loadedFiles=[...new Set([...(datasetInfo[mode].loadedFiles||[]),fileName])];
+ try{
+  localStorage.setItem(uploadStorageKey(mode),JSON.stringify(existing.map(r=>({...r,dt:r.dt.toISOString()}))));
+ }catch(error){
+  uploadStatus('Data ditambahkan ke dashboard, tetapi penyimpanan browser gagal (kemungkinan kapasitas penuh). Ekspor CSV sebagai cadangan.','error');
+ }
+ pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadFile').value='';
+ document.getElementById('uploadPreview').hidden=true;
+ const currentMode=document.getElementById('dataSource').value;
+ if(currentMode===mode)activateDataSource(mode);
+ uploadStatus('Selesai append: '+added.toLocaleString('id-ID')+' baris baru ditambahkan; '+skipped.toLocaleString('id-ID')+' duplikat dilewati. Tersimpan pada browser ini.','success');
+}
+function restoreBrowserUploads(){
+ for(const mode of ['wilayah','sgw']){
+  try{
+   const saved=JSON.parse(localStorage.getItem(uploadStorageKey(mode))||'[]');
+   if(!Array.isArray(saved)||!saved.length)continue;
+   const existing=datasets[mode]||[],seen=new Set(existing.map(r=>uploadDuplicateKey(r,mode)));
+   saved.forEach(r=>{r.dt=new Date(r.dt);if(Number.isFinite(r.dt.getTime())){const key=uploadDuplicateKey(r,mode);if(!seen.has(key)){seen.add(key);existing.push(r)}}});
+   existing.sort((a,b)=>a.dt-b.dt);datasets[mode]=existing;
+   datasetInfo[mode]=datasetInfo[mode]||{warnings:[],loadedFiles:[]};
+   datasetInfo[mode].loadedFiles=[...new Set([...(datasetInfo[mode].loadedFiles||[]),'Data tersimpan di browser'])];
+  }catch(error){console.warn('Tidak dapat memulihkan upload lokal '+mode,error)}
+ }
+}
+
 function initializeDashboard(payload){
  datasets={wilayah:payload.wilayah.data,sgw:payload.sgw.data};datasetInfo={wilayah:payload.wilayah,sgw:payload.sgw};
  for(const mode of ['wilayah','sgw'])datasets[mode]=datasets[mode].map(r=>({...r,dt:parseDate(String(r['15 Minutes']),mode)})).filter(r=>Number.isFinite(r.dt.getTime())).sort((a,b)=>a.dt-b.dt);
+ restoreBrowserUploads();
  if(!datasets.wilayah.length&&!datasets.sgw.length)throw new Error('Tidak ada tanggal yang valid.');
  if(!sourceInitialized){
   enhanceLocationFilters();
   document.getElementById('dataSource').onchange=e=>activateDataSource(e.target.value);
   ['regionFrom','regionTo','regionMetric'].forEach(id=>document.getElementById(id).addEventListener('change',renderMap));
   downloadCsv.onclick=download;downloadCsv2.onclick=download;
+  document.getElementById('previewUpload').onclick=previewCsvUpload;
+  document.getElementById('confirmUpload').onclick=confirmCsvUpload;
+  document.getElementById('uploadSource').onchange=()=>{pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadPreview').hidden=true;};
   dataSearch.oninput=()=>{const q=dataSearch.value.trim().toLowerCase();const found=rows.filter(r=>Object.values(r).some(v=>String(v??'').toLowerCase().includes(q)));renderTable(found,'dataBody','dataHead',1000)};
   sourceInitialized=true;
  }
