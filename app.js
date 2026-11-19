@@ -262,9 +262,9 @@ function normalizeUploadedRows(rawRows,mode){
 function uploadDuplicateKey(row,mode){
  return [row.dt?.getTime()||'',mode==='sgw'?row.SGW:row.CIRCLE,row.REGION,row.BRANCH,row.KABUPATEN].map(v=>String(v??'').trim().toUpperCase()).join('|');
 }
-function renderUploadPreview(data){
+function renderUploadPreview(data,mode){
  const box=document.getElementById('uploadPreview');if(!box)return;
- const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(TB)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)'];
+ const cols=mode==='sgw'?['15 Minutes','SGW','Total Traffic(TB)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)'];
  box.hidden=false;
  box.innerHTML='<div style="padding:8px 10px;color:#9fc9e5;font-size:10px">Pratinjau 5 baris pertama dari '+data.length.toLocaleString('id-ID')+' baris valid</div><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+data.slice(0,5).map(r=>'<tr>'+cols.map(c=>'<td>'+esc(r[c]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
 }
@@ -278,7 +278,7 @@ function previewCsvUpload(){
    const data=normalizeUploadedRows(result,mode);
    if(!data.length)throw new Error('Tidak ada baris dengan tanggal valid pada file ini.');
    pendingUpload={mode,fileName:file.name,data};
-   renderUploadPreview(data);
+   renderUploadPreview(data,mode);
    document.getElementById('confirmUpload').disabled=false;
    uploadStatus('File valid: '+file.name+' · '+data.length.toLocaleString('id-ID')+' baris. Tekan “Tambahkan Data” untuk append.','success');
   }catch(error){pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadPreview').hidden=true;uploadStatus(error.message,'error')}
