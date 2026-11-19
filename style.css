@@ -278,3 +278,35 @@
 @media(max-width:800px){.network-visual{height:185px}.ai-hologram{transform:translate(-50%,-50%) scale(.78)}.label-left{left:-24px}.label-right{right:-37px}}
 @media(max-width:440px){.network-visual{height:155px}.ai-hologram{transform:translate(-50%,-50%) scale(.66)}.ai-label{font-size:6px}.label-left{left:-13px}.label-right{right:-20px}}
 @media(prefers-reduced-motion:reduce){.login-screen *, .login-screen *:before,.login-screen *:after{animation:none!important;transition:none!important}}
+
+/* ===== Animated android companion ===== */
+.ai-hologram{width:230px;height:255px;filter:drop-shadow(0 0 24px rgba(0,210,255,.35))}
+.robot-illustration{position:relative;z-index:3;width:210px;height:245px;overflow:visible;animation:botHover 4.5s ease-in-out infinite;filter:drop-shadow(0 0 13px rgba(0,214,255,.35))}
+.bot-head{transform-origin:130px 135px;animation:botLook 7s ease-in-out infinite}
+.bot-body{transform-origin:130px 165px;animation:botBreath 3.2s ease-in-out infinite}
+.bot-antenna{transform-origin:130px 30px;animation:botSignal 1.8s ease-in-out infinite}
+.bot-eyes{transform-origin:130px 82px;animation:botBlink 5s infinite}
+.bot-spark{animation:sparkOrbit 4s linear infinite;transform-origin:130px 150px}
+.ai-halo.halo-outer{width:220px;height:220px;border-width:2px;border-color:rgba(0,222,255,.52);box-shadow:0 0 30px rgba(0,190,255,.16)}
+.ai-halo.halo-inner{width:175px;height:175px;border-color:rgba(221,97,255,.55)}
+.ai-scanline{left:12px;right:12px;top:50%;height:2px;background:linear-gradient(90deg,transparent,#6bffff,#d07cff,transparent);box-shadow:0 0 18px #00eaff;animation:scanMove 2.7s ease-in-out infinite}
+@keyframes botHover{0%,100%{transform:translateY(4px) rotate(-1deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+@keyframes botLook{0%,100%{transform:rotate(0)}35%{transform:rotate(-3deg)}65%{transform:rotate(3deg)}}
+@keyframes botBreath{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.035)}}
+@keyframes botSignal{0%,100%{opacity:.7}50%{opacity:1;filter:drop-shadow(0 0 10px #ff5fe4)}}
+@keyframes sparkOrbit{to{transform:rotate(360deg)}}
+.network-node{animation:nodePulse 1.5s ease-in-out infinite,networkDrift 6s ease-in-out infinite alternate}
+.node-b{animation-delay:.3s,.8s}.node-c{animation-delay:.6s,1.5s}.node-d{animation-delay:.9s,2.2s}.node-e{animation-delay:1.2s,2.9s}
+.network-link{background-size:200% 100%;animation:dataFlow 2.4s linear infinite}
+@keyframes dataFlow{from{background-position:100% 0}to{background-position:-100% 0}}
+@keyframes networkDrift{from{translate:0 0}to{translate:0 -8px}}
+.login-card{animation:cardArrive .9s cubic-bezier(.2,.8,.2,1) both}
+.login-brand{animation:brandGlow 5s ease-in-out infinite}
+.login-submit{position:relative;overflow:hidden}
+.login-submit:after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);animation:buttonSweep 4s ease-in-out infinite}
+@keyframes cardArrive{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes brandGlow{50%{filter:drop-shadow(0 0 10px rgba(0,220,255,.28))}}
+@keyframes buttonSweep{0%,55%{transform:translateX(-120%)}80%,100%{transform:translateX(120%)}}
+@media(max-width:800px){.ai-hologram{transform:translate(-50%,-50%) scale(.82)}}
+@media(max-width:440px){.ai-hologram{transform:translate(-50%,-50%) scale(.68)}}
+@media(prefers-reduced-motion:reduce){.robot-illustration,.bot-head,.bot-body,.bot-antenna,.bot-eyes,.bot-spark{animation:none!important}}
