@@ -25,7 +25,7 @@ function parseDate(value,mode=dataMode){
  if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));
  // CSV date convention: DD/MM/YYYY HH:mm. Example: 03/10/2026 19:00 = 3 October 2026 19:00 WIB.
  const m=s.match(/^([0-9]{1,2})[\\/.-]([0-9]{1,2})[\\/.-]([0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
- if(!m)return new Date(s);
+ if(!m)return new Date(NaN);
  const day=+m[1],month=+m[2],year=+m[3],hour=+(m[4]||0),minute=+(m[5]||0),second=+(m[6]||0);
  const parsed=new Date(year,month-1,day,hour,minute,second);
  if(month<1||month>12||day<1||day>31||parsed.getFullYear()!==year||parsed.getMonth()!==month-1||parsed.getDate()!==day||hour>23||minute>59||second>59)return new Date(NaN);
