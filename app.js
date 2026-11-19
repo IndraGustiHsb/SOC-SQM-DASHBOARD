@@ -211,7 +211,7 @@ function loadLegacyCsvFiles(){
      resolve({file:name,headers:h,data});
     },error:e=>resolve({file:name,error:e.message||String(e)})});
    })));
-   let sig=null;const data=[],loadedFiles=[],warnings=[];parts.forEach(p=>{if(p.error){warnings.push(p.file+': '+p.error);return}const s=p.headers.join('\\u001f');if(sig&&s!==sig){warnings.push(p.file+': susunan header berbeda, file dilewati');return}sig||=s;loadedFiles.push(p.file);data.push(...p.data)});
+   let sig=null;const data=[],loadedFiles=[],warnings=[];parts.forEach(p=>{if(p.error){warnings.push(p.file+': '+p.error);return}const s=p.headers.join('\\u001f');if(sig&&s!==sig){warnings.push(p.file+': susunan header berbeda, file dilewati');return}sig||=s;loadedFiles.push(p.file);for(const row of p.data)data.push(row)});
    return {data:mode==='wilayah'?normalizeLocationHierarchy(data):data,warnings,loadedFiles};
   };
   const [wilayah,sgw]=await Promise.all([read('wilayah',groups.wilayah),read('sgw',groups.sgw)]);
