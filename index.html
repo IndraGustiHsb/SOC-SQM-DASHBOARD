@@ -9,7 +9,47 @@
   <script src="papaparse.min.js"></script>
 </head>
 <body>
-  <div class="app-shell">
+  <section id="loginScreen" class="login-screen" aria-labelledby="loginTitle">
+    <div class="login-grid" aria-hidden="true"></div>
+    <div class="login-orbit orbit-one" aria-hidden="true"></div>
+    <div class="login-orbit orbit-two" aria-hidden="true"></div>
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="login-logo"><span></span><span></span><span></span><span></span></div>
+        <div><strong>SOC<span>·</span>SQM</strong><small>NETWORK OPERATIONS CENTER</small></div>
+      </div>
+      <div class="login-main">
+        <div class="login-visual">
+          <div class="visual-eyebrow"><i></i> SECURE MONITORING ENVIRONMENT</div>
+          <h1>Network visibility.<br><em>Operational clarity.</em></h1>
+          <p>Centralized access to network quality, traffic performance, and service monitoring.</p>
+          <div class="network-visual" aria-hidden="true">
+            <div class="network-ring ring-a"></div><div class="network-ring ring-b"></div>
+            <div class="network-core"><b>CORE</b><small>SOC / SQM</small></div>
+            <span class="network-node node-a"></span><span class="network-node node-b"></span><span class="network-node node-c"></span><span class="network-node node-d"></span><span class="network-node node-e"></span>
+            <span class="network-link link-a"></span><span class="network-link link-b"></span><span class="network-link link-c"></span><span class="network-link link-d"></span>
+            <div class="visual-caption"><span>NETWORK TOPOLOGY</span><span>SECURE SESSION <b>●</b></span></div>
+          </div>
+          <div class="login-feature-row"><div><b>01</b><span>REAL-TIME<br>VISIBILITY</span></div><div><b>02</b><span>QUALITY<br>INTELLIGENCE</span></div><div><b>03</b><span>SECURE<br>ACCESS</span></div></div>
+        </div>
+        <div class="login-card">
+          <div class="login-card-top"><span>IDENTITY VERIFICATION</span><span class="lock-icon">⌑</span></div>
+          <div class="login-card-title"><div class="login-kicker">WELCOME BACK</div><h2 id="loginTitle">Sign in to<br>your workspace.</h2><p>Enter your authorized account to continue.</p></div>
+          <form id="loginForm" class="login-form">
+            <label for="loginEmail">EMAIL ADDRESS</label>
+            <div class="login-input-wrap"><span>✉</span><input id="loginEmail" type="email" autocomplete="username" placeholder="name@company.com" required></div>
+            <label for="loginPassword">PASSWORD</label>
+            <div class="login-input-wrap"><span>⌑</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required><button id="togglePassword" class="password-toggle" type="button" aria-label="Tampilkan password">SHOW</button></div>
+            <div id="loginMessage" class="login-message" role="status" aria-live="polite">Authorized personnel only.</div>
+            <button id="loginSubmit" class="login-submit" type="submit"><span>ACCESS DASHBOARD</span><b>→</b></button>
+          </form>
+          <div class="login-security"><span>◈</span> Protected by Supabase Authentication</div>
+        </div>
+      </div>
+      <footer class="login-footer"><span>© SOC-SQM NETWORK MONITORING</span><span>PRIVATE ACCESS <i></i></span><span>SECURE GATEWAY · V1.0</span></footer>
+    </div>
+  </section>
+  <div class="app-shell" id="appShell" hidden>
     <aside class="sidebar">
       <div class="brand-mark"><span></span><span></span><span></span></div>
       <nav>
@@ -28,7 +68,7 @@
           <h1>SOC - SQM MONITORING</h1>
           <p>Network Quality Performance Monitoring</p>
         </div>
-        <div class="top-status"><i></i> MONITORING <span class="clock">--:--:--</span><small>WIB</small></div>
+        <div class="top-status"><i></i> MONITORING <span class="clock">--:--:--</span><small>WIB</small><button id="logoutButton" class="logout-btn" type="button">LOG OUT ↗</button></div>
       </header>
 
       <section id="dashboardView" class="view active-view">
@@ -90,7 +130,8 @@
       <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari daftar file pada <code>data/manifest.json</code>.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: GB (Byte ÷ 1.000.000.000) · SGW: TB</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
     </main>
   </div>
-  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js" defer></script>
 </body>
 </html>
 
