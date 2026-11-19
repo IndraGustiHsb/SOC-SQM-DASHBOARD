@@ -20,7 +20,7 @@ function parseDate(value,mode=dataMode){const s=String(value??'').trim();if(!s)r
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const v=Number(r[key]??0);if(key==='Total Traffic(Byte)')return dataMode==='wilayah'?v/TRAFFIC_DIVISOR:v;return Number.isFinite(v)?v:0}
-function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB';s.format=v=>v.toLocaleString('en-US',{maximumFractionDigits:3})+' '+s.unit;}
+function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB';s.format=v=>v.toLocaleString('en-US',{maximumFractionDigits:3});}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
 function normalizeLocationHierarchy(data){
  const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
@@ -62,7 +62,7 @@ function enhanceLocationFilters(){
 }
 function setupFilters(){
  const min=rows[0].dt,max=rows[rows.length-1].dt,minDate=isoDate(min),maxDate=isoDate(max); dateFrom.value=minDate;dateTo.value=maxDate;compareFrom.min=compareTo.min=minDate;compareFrom.max=compareTo.max=maxDate;compareFrom.value=minDate;compareTo.value=maxDate;document.getElementById('compareDateGroup').hidden=!compare.checked;circle.innerHTML='<option value="ALL">All Circle</option>'+unique('CIRCLE').map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); refreshDependent();
- ['dateFrom','dateTo','period','circle','region','branch','kabupaten','sgwFilter','compare','compareFrom','compareTo'].forEach(id=>{const el=document.getElementById(id);el.onchange=()=>{if(['circle','region','branch'].includes(id))refreshDependent();if(id==='compare')document.getElementById('compareDateGroup').hidden=!compare.checked;if(id==='compareFrom')compareTo.min=compareFrom.value;if(id==='compareTo')compareFrom.max=compareTo.value;update()}}); reset.onclick=()=>{dateFrom.value=minDate;dateTo.value=maxDate;period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareFrom.value=minDate;compareTo.value=maxDate;compareTo.min=minDate;compareFrom.max=maxDate;document.getElementById('compareDateGroup').hidden=true;refreshDependent();update()};
+ ['dateFrom','dateTo','period','circle','region','branch','kabupaten','sgwFilter','compare','compareFrom','compareTo'].forEach(id=>{const el=document.getElementById(id);el.onchange=()=>{if(['circle','region','branch'].includes(id))refreshDependent();if(id==='compare')document.getElementById('compareDateGroup').hidden=!compare.checked;if(id==='compareFrom')compareTo.min=compareFrom.value;if(id==='compareTo')compareFrom.max=compareTo.value;update()}}); reset.onclick=()=>{dateFrom.value=minDate;dateTo.value=maxDate;period.value='15min';circle.value=region.value=branch.value=kabupaten.value='ALL';compare.checked=false;compareFrom.value=minDate;compareTo.value=maxDate;compareTo.min=minDate;compareFrom.max=maxDate;document.getElementById('compareDateGroup').hidden=true;sgwFilter.value='ALL';refreshDependent();update()};
 }
 function refreshDependent(){
  const c=circle.value,r=region.value,b=branch.value;
@@ -168,7 +168,7 @@ function renderMap(){
  if(!fromEl.value)fromEl.value=dates.at(-1);if(!toEl.value)toEl.value=dates.at(-1);
  if(fromEl.value>toEl.value){const swap=fromEl.value;fromEl.value=toEl.value;toEl.value=swap}
  const from=fromEl.value,to=toEl.value,days=Math.max(1,Math.round((new Date(`${to}T00:00:00Z`)-new Date(`${from}T00:00:00Z`))/86400000)+1),previousTo=dateShift(from,-1),previousFrom=dateShift(previousTo,-days);
- const current=regionDateStats(from,to,metric),prior=regionDateStats(previousFrom,previousTo,metric),metricTitle=regionMetricTitles[metric]||metric,unit=metric==='Total Traffic(Byte)'?'TB':metric.includes('(%)')?'%':'ms';
+ const current=regionDateStats(from,to,metric),prior=regionDateStats(previousFrom,previousTo,metric),metricTitle=regionMetricTitles[metric]||metric,unit=metric==='Total Traffic(Byte)'?'GB':metric.includes('(%)')?'%':'ms';
  const pretty=d=>fmtDate(new Date(`${d}T00:00:00`));
  document.getElementById('regionDateCaption').textContent=`${pretty(from)} — ${pretty(to)} · Compare ${pretty(previousFrom)} — ${pretty(previousTo)}`;
  document.getElementById('regionValueHeader').textContent=`${metricTitle} (${unit})`;
