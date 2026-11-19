@@ -23,10 +23,13 @@ function parseDate(value,mode=dataMode){
  if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T.*(?:Z|[+-][0-9]{2}:?[0-9]{2})$/i.test(s))return new Date(s);
  const iso=s.match(/^([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
  if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3],+(iso[4]||0),+(iso[5]||0),+(iso[6]||0));
- const m=s.match(/^([0-9]{1,2})[\/.-]([0-9]{1,2})[\/.-]([0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
+ // CSV date convention: MM/DD/YYYY HH:mm. Example: 10/3/2026 19:00 = 3 October 2026 19:00 WIB.
+ const m=s.match(/^([0-9]{1,2})[\\/.-]([0-9]{1,2})[\\/.-]([0-9]{4})(?:[ T]([0-9]{1,2}):([0-9]{2})(?::([0-9]{2}))?)?/);
  if(!m)return new Date(s);
- const a=+m[1],b=+m[2],day=mode==='wilayah'?a:b,month=mode==='wilayah'?b:a;
- return new Date(+m[3],month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0));
+ const month=+m[1],day=+m[2],year=+m[3],hour=+(m[4]||0),minute=+(m[5]||0),second=+(m[6]||0);
+ const parsed=new Date(year,month-1,day,hour,minute,second);
+ if(month<1||month>12||day<1||day>31||parsed.getFullYear()!==year||parsed.getMonth()!==month-1||parsed.getDate()!==day||hour>23||minute>59||second>59)return new Date(NaN);
+ return parsed;
 }
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
