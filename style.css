@@ -665,3 +665,54 @@
   .network-command-visual .ai-hologram:before,.network-command-visual .ai-hologram:after{display:none}
   .login-card{width:100%;max-width:440px}
 }
+
+
+/* ===== Final login positioning + next-gen AI guardian ===== */
+@media(min-width:801px){
+  .login-shell{width:min(1540px,100%);position:relative}
+  .login-main{grid-template-columns:minmax(0,1fr) minmax(390px,440px);align-items:start;gap:clamp(24px,4vw,70px)}
+  .login-card{grid-column:2;grid-row:1;align-self:start;justify-self:end;margin:0 0 0 auto;width:min(100%,440px)}
+  .login-visual{grid-column:1;grid-row:1;padding-top:20px}
+}
+@media(max-width:800px){
+  .login-screen{align-items:flex-start;padding:20px 16px 30px}
+  .login-shell{width:100%;margin:0}
+  .login-brand{margin-bottom:16px}
+  .login-main{grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+  .login-visual{grid-row:1;padding:4px 0}
+  .login-card{grid-row:2;justify-self:end;align-self:start;width:min(94%,440px);margin:0 0 0 auto}
+}
+.network-command-visual .ai-hologram{left:78%;top:50%;width:320px;height:345px;z-index:9;filter:drop-shadow(0 0 28px rgba(0,231,255,.65)) drop-shadow(0 0 55px rgba(158,88,255,.34))}
+.network-command-visual .robot-illustration{width:300px;height:338px;overflow:visible;animation:mechHover 4.5s ease-in-out infinite,mechGlowPulse 3.8s ease-in-out infinite}
+.network-command-visual .ai-halo.halo-outer{width:320px;height:320px;border:2px dashed rgba(84,239,255,.68);box-shadow:0 0 30px rgba(0,219,255,.24),inset 0 0 32px rgba(0,219,255,.1);animation:orbitSpin 13s linear infinite}
+.network-command-visual .ai-halo.halo-inner{width:250px;height:250px;border:1px solid rgba(201,121,255,.65);box-shadow:0 0 40px rgba(160,91,255,.28);animation:haloPulse 2.2s ease-in-out infinite}
+.network-command-visual .ai-hologram:before{content:"";position:absolute;left:50%;top:50%;width:360px;height:360px;transform:translate(-50%,-50%);border:1px solid rgba(0,227,255,.35);border-radius:50%;box-shadow:0 0 40px rgba(0,210,255,.2),inset 0 0 35px rgba(0,210,255,.1);animation:mechOrbit 10s linear infinite}
+.network-command-visual .ai-hologram:after{content:"";position:absolute;left:50%;top:50%;width:385px;height:385px;transform:translate(-50%,-50%) rotateX(68deg);border:2px solid rgba(213,123,255,.55);border-radius:50%;box-shadow:0 0 24px rgba(183,104,255,.25);animation:mechOrbit 14s linear infinite reverse}
+.network-command-visual .mech-eyes{animation:mechEye 2.8s ease-in-out infinite}
+.network-command-visual .mech-lights circle{animation:mechLights 1.5s ease-in-out infinite alternate}
+.network-command-visual .mech-lights circle:nth-child(even){animation-delay:.7s}
+.network-command-visual .ai-label{font-size:8px;letter-spacing:1.4px}
+.network-command-visual .label-left{left:-54px;top:56px}
+.network-command-visual .label-right{right:-58px;bottom:52px}
+@keyframes mechHover{0%,100%{transform:translateY(5px) rotate(-1deg)}50%{transform:translateY(-13px) rotate(1deg)}}
+@keyframes mechGlowPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(68,239,255,.48))}50%{filter:drop-shadow(0 0 28px rgba(68,239,255,.9)) drop-shadow(0 0 18px rgba(195,104,255,.4))}}
+@keyframes mechOrbit{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes mechEye{0%,42%,48%,100%{opacity:1}45%{opacity:.3}}
+@keyframes mechLights{to{opacity:.25}}
+@media(max-width:1000px) and (min-width:801px){
+ .network-command-visual .ai-hologram{left:78%;transform:translate(-50%,-50%) scale(.82)}
+}
+@media(max-width:800px){
+ .network-command-visual{height:270px;max-width:100%;overflow:hidden}
+ .network-command-visual .ai-hologram{left:78%;width:250px;height:275px;transform:translate(-50%,-50%) scale(.82)}
+ .network-command-visual .robot-illustration{width:240px;height:270px}
+ .network-command-visual .ai-halo.halo-outer{width:245px;height:245px}
+ .network-command-visual .ai-halo.halo-inner{width:195px;height:195px}
+ .network-command-visual .ai-hologram:before,.network-command-visual .ai-hologram:after{display:none}
+ .login-card{padding:30px 26px 23px}
+}
+@media(max-width:520px){
+ .network-command-visual{height:225px}
+ .network-command-visual .ai-hologram{left:76%;transform:translate(-50%,-50%) scale(.68)}
+ .login-card{width:100%;max-width:440px;padding:27px 22px 22px}
+}
