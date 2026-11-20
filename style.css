@@ -581,3 +581,87 @@
 /* Subtle 3D globe rotation */
 .earth-globe{transform-style:preserve-3d;animation:earthTurn 28s ease-in-out infinite,earthSpin3d 32s linear infinite}
 @keyframes earthSpin3d{0%{transform:perspective(700px) rotateY(-12deg) rotateX(5deg)}50%{transform:perspective(700px) rotateY(12deg) rotateX(-3deg)}100%{transform:perspective(700px) rotateY(348deg) rotateX(5deg)}}
+
+
+/* ===== AI guardian redesign + top-right login placement ===== */
+@media(min-width:801px){
+  .login-main{align-items:start}
+  .login-card{
+    grid-column:2;
+    grid-row:1;
+    align-self:start;
+    justify-self:end;
+    margin-top:clamp(8px,2.2vh,28px);
+    margin-right:0;
+    width:min(100%,440px);
+  }
+}
+.network-command-visual .ai-hologram{
+  left:79%;
+  top:49%;
+  width:285px;
+  height:315px;
+  z-index:8;
+  filter:drop-shadow(0 0 24px rgba(0,226,255,.58)) drop-shadow(0 0 48px rgba(143,81,255,.28));
+  transform:translate(-50%,-50%);
+}
+.network-command-visual .robot-illustration{
+  width:265px;
+  height:306px;
+  overflow:visible;
+  filter:drop-shadow(0 0 12px rgba(68,239,255,.52));
+  animation:guardianFloat 4.6s ease-in-out infinite,guardianPower 5s ease-in-out infinite;
+}
+.network-command-visual .ai-halo.halo-outer{
+  width:290px;height:290px;
+  border:2px dashed rgba(83,235,255,.62);
+  box-shadow:0 0 24px rgba(0,220,255,.2),inset 0 0 25px rgba(0,220,255,.08);
+  animation:orbitSpin 15s linear infinite;
+}
+.network-command-visual .ai-halo.halo-inner{
+  width:230px;height:230px;
+  border-color:rgba(191,117,255,.55);
+  box-shadow:0 0 35px rgba(149,90,255,.2);
+  animation:haloPulse 2.5s ease-in-out infinite;
+}
+.network-command-visual .ai-hologram:before{
+  content:"";position:absolute;left:50%;top:50%;width:330px;height:330px;
+  transform:translate(-50%,-50%);border:1px solid rgba(0,232,255,.35);
+  border-radius:50%;box-shadow:0 0 35px rgba(0,208,255,.16),inset 0 0 35px rgba(0,208,255,.1);
+  animation:guardianRing 8s linear infinite;
+}
+.network-command-visual .ai-hologram:after{
+  content:"";position:absolute;left:50%;top:50%;width:350px;height:350px;
+  transform:translate(-50%,-50%) rotateX(68deg);
+  border:2px solid rgba(207,121,255,.55);border-radius:50%;
+  box-shadow:0 0 22px rgba(183,104,255,.25);
+  animation:guardianRing 10s linear infinite reverse;
+}
+.network-command-visual .ai-label{font-size:8px;letter-spacing:1.4px}
+.network-command-visual .label-left{left:-48px;top:56px}
+.network-command-visual .label-right{right:-55px;bottom:54px}
+.network-command-visual .ai-scanline{left:-35px;right:-35px;height:3px;opacity:.8}
+.network-command-visual .bot-eyes rect{filter:drop-shadow(0 0 8px #55faff)}
+.network-command-visual .bot-head{filter:drop-shadow(0 0 10px rgba(0,229,255,.24))}
+.network-command-visual .bot-spark circle{animation:guardianSpark 1.8s ease-in-out infinite alternate}
+.network-command-visual .bot-spark path{filter:drop-shadow(0 0 8px #63f6ff)}
+@keyframes guardianFloat{0%,100%{transform:translateY(4px) rotate(-1deg)}50%{transform:translateY(-10px) rotate(1deg)}}
+@keyframes guardianPower{0%,100%{filter:drop-shadow(0 0 12px rgba(68,239,255,.42))}50%{filter:drop-shadow(0 0 26px rgba(68,239,255,.8)) drop-shadow(0 0 18px rgba(195,104,255,.35))}}
+@keyframes guardianRing{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes guardianSpark{to{opacity:.25;transform:scale(.65)}}
+@media(max-width:1000px) and (min-width:801px){
+  .network-command-visual .ai-hologram{left:80%;transform:translate(-50%,-50%) scale(.88)}
+}
+@media(max-width:800px){
+  .login-main{align-items:stretch}
+  .login-card{grid-column:auto;grid-row:auto;align-self:start;justify-self:end;margin:8px 0 0 auto}
+  .network-command-visual .ai-hologram{left:78%;width:235px;height:260px;transform:translate(-50%,-50%) scale(.82)}
+  .network-command-visual .robot-illustration{width:220px;height:254px}
+  .network-command-visual .ai-halo.halo-outer{width:230px;height:230px}
+  .network-command-visual .ai-halo.halo-inner{width:185px;height:185px}
+}
+@media(max-width:520px){
+  .network-command-visual .ai-hologram{left:78%;transform:translate(-50%,-50%) scale(.68)}
+  .network-command-visual .ai-hologram:before,.network-command-visual .ai-hologram:after{display:none}
+  .login-card{width:100%;max-width:440px}
+}
