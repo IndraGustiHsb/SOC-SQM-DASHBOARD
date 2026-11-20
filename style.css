@@ -430,3 +430,83 @@
 @media(prefers-reduced-motion:reduce){
   .login-screen:before,.login-screen:after,.login-visual:before,.ai-hologram:before,.ai-hologram:after,.robot-illustration,.login-card{animation:none!important}
 }
+
+
+/* ===== SOC-SQM NOC cinematic network login v2 ===== */
+.login-screen{isolation:isolate;background:
+ radial-gradient(ellipse at 12% 52%,rgba(0,221,255,.22),transparent 32%),
+ radial-gradient(ellipse at 88% 35%,rgba(157,65,255,.24),transparent 34%),
+ radial-gradient(ellipse at 50% 110%,rgba(0,113,255,.17),transparent 45%),
+ linear-gradient(125deg,#010611 0%,#06142b 42%,#100b2b 100%)}
+.login-screen:before,.login-screen:after{content:"";position:absolute;inset:-30%;z-index:-1;pointer-events:none}
+.login-screen:before{background:repeating-linear-gradient(112deg,transparent 0 95px,rgba(0,224,255,.045) 96px,transparent 98px 190px);animation:netSweep 18s linear infinite}
+.login-screen:after{inset:0;background:radial-gradient(circle at 50% 50%,transparent 0 34%,rgba(0,0,0,.2) 78%);animation:screenBreath 7s ease-in-out infinite}
+.login-grid{background-size:32px 32px;opacity:.75;animation:gridDrift 24s linear infinite}
+.login-orbit.orbit-one{width:880px;height:880px;right:-220px;top:-350px;border-width:1px;animation:orbitBreath 8s ease-in-out infinite}
+.login-orbit.orbit-two{width:620px;height:620px;right:-90px;top:-220px;border-width:2px;animation:orbitSpin 48s linear infinite}
+.login-shell{position:relative;z-index:1}
+.login-brand{animation:brandEnter .9s both}
+.login-logo{position:relative;overflow:hidden}
+.login-logo:after{content:"";position:absolute;inset:-40%;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-100%);animation:logoSweep 4.5s ease-in-out infinite}
+.login-main{perspective:1200px}
+.login-visual{animation:visualEnter 1s .12s both}
+.login-visual h1{text-shadow:0 0 38px rgba(0,208,255,.22)}
+.network-visual{height:330px;max-width:600px;overflow:visible;isolation:isolate}
+.network-visual:before{content:"";position:absolute;inset:4% 8%;border:1px solid rgba(0,219,255,.15);border-radius:50%;transform:rotate(-17deg) scaleY(.42);box-shadow:0 0 35px rgba(0,204,255,.08),inset 0 0 35px rgba(0,204,255,.06);animation:radarRotate 13s linear infinite}
+.network-visual:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 0%,rgba(0,221,255,.07) 48%,transparent 52%);background-size:100% 220%;animation:verticalScan 5s linear infinite;mix-blend-mode:screen}
+.network-ring{border-width:2px}
+.ring-a{width:235px;height:235px;animation:ringPulse 4s ease-in-out infinite}
+.ring-b{width:350px;height:350px;animation:orbitSpin 34s linear infinite}
+.network-link{height:2px;filter:drop-shadow(0 0 5px #00dfff);background:linear-gradient(90deg,transparent,#00efff 35%,#a56cff 70%,transparent);background-size:200% 100%;animation:packetFlow 2.2s linear infinite}
+.link-b{animation-delay:-.7s}.link-c{animation-delay:-1.3s}.link-d{animation-delay:-1.8s}
+.network-node{width:11px;height:11px;z-index:4;animation:nodePulse 1.35s ease-in-out infinite,networkDrift 4s ease-in-out infinite alternate}
+.network-node:after{content:"";position:absolute;inset:-8px;border:1px solid currentColor;border-radius:50%;opacity:.35;animation:nodeRipple 2.4s ease-out infinite}
+.node-b:after{animation-delay:.5s}.node-c:after{animation-delay:1s}.node-d:after{animation-delay:1.5s}
+.ai-hologram{width:270px;height:285px;filter:drop-shadow(0 0 35px rgba(0,210,255,.48))}
+.robot-illustration{width:235px;height:270px;animation:botHover 3.8s ease-in-out infinite}
+.ai-halo.halo-outer{width:250px;height:250px;border-style:dotted;animation:orbitSpin 22s linear infinite}
+.ai-halo.halo-inner{width:195px;height:195px;animation:haloPulse 2.4s ease-in-out infinite}
+.ai-scanline{animation:scanMove 2.1s ease-in-out infinite}
+.ai-label{font-size:8px;text-shadow:0 0 12px rgba(0,220,255,.5)}
+.login-feature-row{gap:clamp(18px,3vw,40px)}
+.login-feature-row div{padding:9px 12px;border:1px solid rgba(65,178,232,.18);border-radius:8px;background:linear-gradient(135deg,rgba(5,34,61,.5),rgba(31,18,66,.3));box-shadow:0 8px 25px rgba(0,0,0,.12);transition:transform .3s,border-color .3s,box-shadow .3s}
+.login-feature-row div:hover{transform:translateY(-5px);border-color:rgba(0,222,255,.55);box-shadow:0 8px 28px rgba(0,192,255,.14)}
+.login-card{overflow:hidden;transform-style:preserve-3d;animation:cardEnter 1s .18s both;transition:transform .35s,border-color .35s,box-shadow .35s}
+.login-card:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(125deg,rgba(0,226,255,.09),transparent 32%,transparent 66%,rgba(177,88,255,.10));opacity:.75}
+.login-card:hover{transform:translateY(-5px);border-color:rgba(89,220,255,.72);box-shadow:0 30px 95px rgba(0,0,0,.52),0 0 55px rgba(0,174,255,.17),inset 0 1px rgba(255,255,255,.1)}
+.login-card>*{position:relative;z-index:1}
+.login-input-wrap{transition:transform .25s,border-color .25s,box-shadow .25s}
+.login-input-wrap:focus-within{transform:translateX(3px);box-shadow:0 0 0 3px rgba(0,218,255,.13),0 0 25px rgba(0,218,255,.13)}
+.login-submit{position:relative;overflow:hidden}
+.login-submit:before{content:"";position:absolute;top:0;bottom:0;left:-80%;width:55%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-20deg);animation:buttonShine 3.5s ease-in-out infinite}
+.login-submit span,.login-submit b{position:relative;z-index:1}
+.login-submit:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(75,89,255,.4),0 0 24px rgba(0,208,255,.18)}
+.login-security span{animation:securityBlink 2s ease-in-out infinite}
+.login-footer{animation:footerEnter 1s .4s both}
+@keyframes netSweep{to{transform:translate3d(8%,0,0)}}
+@keyframes screenBreath{50%{opacity:.48}}
+@keyframes gridDrift{to{background-position:32px 32px}}
+@keyframes orbitBreath{50%{transform:scale(1.035);opacity:.55}}
+@keyframes brandEnter{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes visualEnter{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes cardEnter{from{opacity:0;transform:translate3d(25px,18px,-30px) rotateY(-5deg)}to{opacity:1;transform:translate3d(0,0,0) rotateY(0)}}
+@keyframes logoSweep{0%,55%{transform:translateX(-100%)}78%,100%{transform:translateX(100%)}}
+@keyframes radarRotate{to{transform:rotate(343deg) scaleY(.42)}}
+@keyframes verticalScan{0%{background-position:0 -100%}100%{background-position:0 200%}}
+@keyframes ringPulse{0%,100%{transform:translate(-50%,-50%) scale(.96);opacity:.55}50%{transform:translate(-50%,-50%) scale(1.04);opacity:1}}
+@keyframes packetFlow{to{background-position:200% 0}}
+@keyframes nodeRipple{0%{transform:scale(.5);opacity:.6}100%{transform:scale(2.2);opacity:0}}
+@keyframes securityBlink{50%{opacity:.35;filter:drop-shadow(0 0 8px #00eaff)}}
+@keyframes buttonShine{0%,45%{left:-80%}75%,100%{left:140%}}
+@keyframes footerEnter{from{opacity:0}to{opacity:1}}
+@media(max-width:800px){
+ .network-visual{height:205px;max-width:100%;overflow:hidden}
+ .ring-a{width:155px;height:155px}.ring-b{width:245px;height:245px}
+ .ai-hologram{transform:translate(-50%,-50%) scale(.76)}
+ .login-card:hover{transform:none}
+ .login-feature-row{display:none}
+}
+@media(max-width:440px){.network-visual{height:165px}.ai-hologram{transform:translate(-50%,-50%) scale(.64)}}
+@media(prefers-reduced-motion:reduce){
+ .login-screen:before,.login-screen:after,.login-screen *,.login-screen *:before,.login-screen *:after{animation:none!important;transition:none!important}
+}
