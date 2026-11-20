@@ -577,3 +577,7 @@
  .bts-tower{display:none}
  .earth-tag{letter-spacing:.5px}
 }
+
+/* Subtle 3D globe rotation */
+.earth-globe{transform-style:preserve-3d;animation:earthTurn 28s ease-in-out infinite,earthSpin3d 32s linear infinite}
+@keyframes earthSpin3d{0%{transform:perspective(700px) rotateY(-12deg) rotateX(5deg)}50%{transform:perspective(700px) rotateY(12deg) rotateX(-3deg)}100%{transform:perspective(700px) rotateY(348deg) rotateX(5deg)}}
