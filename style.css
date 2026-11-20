@@ -867,3 +867,118 @@ html:has(.login-screen),body:has(.login-screen){height:100%;overflow:hidden}
 @media(max-width:520px){
   .login-submit{width:100%!important}
 }
+
+/* ===== SOC-SQM AI Network Guardian login refresh ===== */
+html:has(#loginScreen:not([hidden])),body:has(#loginScreen:not([hidden])){height:100%;overflow:hidden}
+#loginScreen[hidden]{display:none!important}
+.login-screen{
+  position:relative!important;isolation:isolate!important;
+  display:block!important;width:100%;height:100vh;height:100svh;min-height:0!important;
+  overflow:hidden!important;padding:22px clamp(20px,4vw,64px) 16px!important;
+  color:#e6f3ff!important;
+  background:radial-gradient(1100px 680px at 15% 12%,#0b1d3d 0%,#050b18 62%),#050b18!important;
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif!important;
+}
+#net{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.login-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(34,230,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(34,230,255,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 85%)}
+.login-scan{position:absolute;left:0;right:0;top:-150px;height:140px;z-index:0;pointer-events:none;background:linear-gradient(transparent,rgba(34,230,255,.075),transparent);animation:guardianScan 8s linear infinite}
+@keyframes guardianScan{to{top:110%}}
+.login-layout{
+  position:relative;z-index:2;width:min(1480px,100%);height:calc(100% - 38px);margin:0 auto;
+  display:grid;grid-template-columns:minmax(0,1.08fr) minmax(380px,.92fr);
+  gap:clamp(24px,5vw,82px);align-items:center;
+}
+.login-hero{min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.guardian-brand{display:inline-flex;align-items:center;gap:11px;color:#22e6ff;font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.guardian-status{width:8px;height:8px;border-radius:50%;background:#22ff9c;box-shadow:0 0 13px #22ff9c;animation:guardianPulse 1.6s ease-in-out infinite}
+@keyframes guardianPulse{50%{opacity:.35;transform:scale(.7)}}
+.guardian-stage{position:relative;width:min(100%,470px);height:clamp(300px,43vh,430px);margin:5px auto 0;display:grid;place-items:center;isolation:isolate}
+.guardian-robot{position:relative;z-index:2;width:min(100%,390px);height:100%;overflow:visible;filter:drop-shadow(0 0 24px rgba(34,230,255,.34));animation:guardianFloat 4.2s ease-in-out infinite}
+@keyframes guardianFloat{0%,100%{transform:translateY(5px)}50%{transform:translateY(-12px)}}
+.guardian-ring{transform-origin:200px 200px;animation:guardianSpin 16s linear infinite}
+.guardian-ring.ring-b{animation-duration:24s;animation-direction:reverse}
+@keyframes guardianSpin{to{transform:rotate(360deg)}}
+.guardian-eyes{transform-box:fill-box;transform-origin:center;animation:guardianBlink 4.8s infinite}
+@keyframes guardianBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+.guardian-data{stroke-dasharray:5 8;animation:guardianDash 1.2s linear infinite}
+@keyframes guardianDash{to{stroke-dashoffset:-26}}
+.guardian-sparks{animation:guardianSpark 2s ease-in-out infinite alternate}
+@keyframes guardianSpark{to{opacity:.3;transform:scale(.88)}}
+.guardian-orbit{position:absolute;left:50%;top:50%;border:1px solid rgba(34,230,255,.2);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+.guardian-orbit.orbit-one{width:90%;height:90%;box-shadow:0 0 45px rgba(34,230,255,.08),inset 0 0 35px rgba(34,230,255,.05)}
+.guardian-orbit.orbit-two{width:76%;height:76%;border-color:rgba(168,85,247,.42);border-style:dashed;animation:guardianSpin 30s linear infinite}
+.guardian-crosshair{position:absolute;left:50%;top:50%;width:110%;height:1px;background:linear-gradient(90deg,transparent,rgba(34,230,255,.25),transparent);transform:translate(-50%,-50%);pointer-events:none}
+.guardian-scanline{position:absolute;z-index:3;left:16%;right:16%;top:18%;height:2px;background:linear-gradient(90deg,transparent,#22e6ff,transparent);box-shadow:0 0 14px #22e6ff;animation:robotScan 3.8s ease-in-out infinite;pointer-events:none}
+@keyframes robotScan{0%,100%{top:20%;opacity:0}15%,75%{opacity:.8}90%{top:80%;opacity:0}}
+.guardian-hud{position:absolute;z-index:4;font-size:9px;line-height:1.5;letter-spacing:1.5px;color:#80a8cc;text-align:left}
+.guardian-hud b{display:block;color:#22ff9c}
+.hud-left{left:0;top:28%}.hud-right{right:0;bottom:25%;text-align:right;color:#c38aff}
+.login-hero h1{margin:0 0 7px;font-size:clamp(27px,3.2vw,43px);line-height:1.1;letter-spacing:-1px;background:linear-gradient(90deg,#22e6ff,#3b82f6,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
+.guardian-subtitle{max-width:500px;margin:0;color:#91a8c6;font-size:13px;line-height:1.65}
+.guardian-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;width:min(100%,540px);margin-top:20px}
+.guardian-stat{min-width:0;padding:9px 8px;border:1px solid rgba(34,230,255,.23);border-radius:10px;background:rgba(8,20,40,.72);box-shadow:inset 0 0 18px rgba(34,230,255,.035)}
+.guardian-stat span{display:block;color:#8098b7;font-size:8px;letter-spacing:1px}
+.guardian-stat b{display:block;margin-top:4px;color:#22e6ff;font-size:clamp(13px,1.5vw,18px);font-variant-numeric:tabular-nums}
+.guardian-metric-note{margin-top:10px;color:#506b8c;font-size:8px;letter-spacing:1.5px}
+.login-card{
+  position:relative;justify-self:end;align-self:center;width:min(100%,460px);margin:0!important;
+  padding:clamp(26px,3vw,38px)!important;border-radius:20px!important;
+  background:rgba(9,20,42,.76)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(34,230,255,.3)!important;
+  box-shadow:0 0 65px rgba(59,130,246,.18),inset 0 0 32px rgba(34,230,255,.045)!important;
+  overflow:hidden;
+}
+.login-card:before{content:"";position:absolute;inset:-2px;z-index:-1;border-radius:22px;background:conic-gradient(from 0deg,transparent 0 72%,#22e6ff,#a855f7,transparent 83%);animation:guardianSpin 7s linear infinite}
+.login-card:after{content:"";position:absolute;inset:1px;z-index:-1;border-radius:19px;background:#08142a}
+.login-card-top{display:flex;align-items:center;justify-content:space-between;color:#22ff9c;font-size:10px;letter-spacing:2px;font-weight:800}
+.login-card-title{margin:22px 0 24px!important}
+.login-kicker{color:#22e6ff;font-size:10px;letter-spacing:2px;font-weight:800}
+.login-card-title h2{margin:8px 0 9px!important;color:#e6f3ff;font-size:clamp(25px,2.5vw,32px)!important;line-height:1.15}
+.login-card-title p{margin:0;color:#91a8c6;font-size:12px;line-height:1.6}
+.login-form{display:flex;flex-direction:column;gap:8px}
+.login-form>label{margin:11px 0 0!important;color:#9aacc8;font-size:10px;letter-spacing:1.4px;font-weight:800}
+.login-input-wrap{height:51px!important;padding:0 13px!important;gap:11px;border:1px solid rgba(127,149,179,.32)!important;border-radius:11px!important;background:rgba(2,8,20,.72)!important;display:flex;align-items:center;transition:.2s}
+.login-input-wrap:focus-within{border-color:#22e6ff!important;box-shadow:0 0 0 3px rgba(34,230,255,.13),0 0 18px rgba(34,230,255,.2)}
+.login-input-wrap>span{color:#22e6ff;font-size:15px}
+.login-input-wrap input{min-width:0;flex:1;width:100%;padding:0!important;border:0!important;outline:0!important;background:transparent!important;color:#e6f3ff!important;font:14px "Segoe UI",sans-serif!important;box-shadow:none!important}
+.login-input-wrap input::placeholder{color:#647b9c}
+.password-toggle{border:0!important;background:none!important;color:#22e6ff!important;font-size:9px!important;font-weight:800;letter-spacing:1px;cursor:pointer;padding:8px}
+.login-message{min-height:17px;margin:7px 0 2px!important;color:#8198b8;font:11px/1.5 ui-monospace,Consolas,monospace!important}
+.login-message.error{color:#ff4d6d!important}.login-message.success{color:#22ff9c!important}
+.login-submit{width:100%;height:53px!important;margin:4px 0 0!important;padding:0 18px!important;border:1px solid rgba(34,230,255,.75)!important;border-radius:12px!important;background:linear-gradient(100deg,#0b9fc7,#2867dc,#8b35d5)!important;color:#fff!important;display:flex!important;align-items:center;justify-content:space-between;box-shadow:0 0 25px rgba(34,230,255,.25);font-size:12px!important;font-weight:800;letter-spacing:1.5px;cursor:pointer;transition:.22s}
+.login-submit:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(34,230,255,.5)}
+.login-submit:disabled{opacity:.7;cursor:wait}
+.login-submit b{font-size:20px}
+.login-security{margin-top:19px;padding-top:14px;border-top:1px solid rgba(127,149,179,.18);color:#8198b8;font-size:10px}
+.login-security span{margin-right:8px;color:#22e6ff}
+.guardian-footer{position:absolute;z-index:2;left:clamp(20px,4vw,64px);right:clamp(20px,4vw,64px);bottom:12px;display:flex;justify-content:space-between;gap:12px;color:#526e91;font-size:8px;letter-spacing:1.4px}
+.guardian-footer span{display:flex;align-items:center;gap:8px}
+.guardian-footer i{width:6px;height:6px;border-radius:50%;background:#22ff9c;box-shadow:0 0 9px #22ff9c}
+@media(max-width:900px){
+  html:has(#loginScreen:not([hidden])),body:has(#loginScreen:not([hidden])){height:auto;overflow:auto}
+  .login-screen{height:auto;min-height:100svh;overflow:visible;padding:22px 18px 45px!important}
+  .login-layout{height:auto;min-height:calc(100svh - 68px);grid-template-columns:minmax(0,1fr);gap:16px}
+  .login-hero{grid-row:1}
+  .guardian-stage{height:clamp(220px,38vh,310px);max-width:390px}
+  .guardian-robot{width:min(100%,310px)}
+  .login-hero h1{font-size:clamp(26px,6vw,36px)}
+  .guardian-subtitle{font-size:12px}
+  .guardian-stats{margin-top:13px}
+  .login-card{grid-row:2;justify-self:center;width:min(100%,460px);padding:25px!important}
+  .guardian-footer{position:relative;left:auto;right:auto;bottom:auto;margin:18px auto 0;width:min(1480px,100%);flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .login-screen{padding:17px 13px 25px!important}
+  .guardian-brand{font-size:10px}
+  .guardian-stage{height:230px;margin:0 auto}
+  .guardian-hud{font-size:7px}.hud-left{left:1%}.hud-right{right:1%}
+  .guardian-stats{grid-template-columns:repeat(2,minmax(0,1fr));max-width:340px}
+  .guardian-stat{padding:8px}
+  .login-card{padding:23px 19px!important}
+  .login-card-title{margin:17px 0 19px!important}
+  .login-input-wrap{height:48px!important}
+  .guardian-footer{font-size:7px;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .login-screen *,#net{animation:none!important;scroll-behavior:auto!important}
+}
