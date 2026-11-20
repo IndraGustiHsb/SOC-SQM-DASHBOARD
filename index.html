@@ -62,34 +62,49 @@
             <div class="network-ring ring-a"></div><div class="network-ring ring-b"></div>
             <div class="ai-hologram" aria-hidden="true">
               <div class="ai-halo halo-outer"></div><div class="ai-halo halo-inner"></div>
-              <svg class="robot-illustration" viewBox="0 0 260 300" role="presentation">
+              <svg class="robot-illustration" viewBox="0 0 320 360" role="presentation">
                 <defs>
-                  <linearGradient id="botShell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5fdff"/><stop offset=".42" stop-color="#83cfff"/><stop offset="1" stop-color="#4055a9"/></linearGradient>
-                  <linearGradient id="botDark" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123d70"/><stop offset="1" stop-color="#090e2e"/></linearGradient>
-                  <linearGradient id="botGlow" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#19f5ff"/><stop offset=".5" stop-color="#6f8bff"/><stop offset="1" stop-color="#ff6be5"/></linearGradient>
-                  <filter id="botShadow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  <linearGradient id="mechArmor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3fdff"/><stop offset=".28" stop-color="#83d9f4"/><stop offset=".62" stop-color="#3976b5"/><stop offset="1" stop-color="#152958"/></linearGradient>
+                  <linearGradient id="mechDark" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#12365f"/><stop offset="1" stop-color="#030d25"/></linearGradient>
+                  <linearGradient id="mechCore"><stop stop-color="#00f5ff"/><stop offset=".5" stop-color="#8c8cff"/><stop offset="1" stop-color="#ff69dc"/></linearGradient>
+                  <filter id="mechGlow"><feGaussianBlur stdDeviation="5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                 </defs>
-                <g class="bot-antenna"><path d="M130 34V15" stroke="#73efff" stroke-width="4" stroke-linecap="round"/><circle cx="130" cy="11" r="7" fill="#ff75e8" filter="url(#botShadow)"/></g>
-                <g class="bot-head">
-                  <path d="M79 65Q79 35 109 32H151Q181 35 181 65V112Q181 137 155 143H105Q79 137 79 112Z" fill="url(#botShell)" stroke="#a8f8ff" stroke-width="3"/>
-                  <path d="M88 67Q88 47 111 44H149Q172 47 172 67V105Q172 126 150 130H110Q88 126 88 105Z" fill="url(#botDark)" stroke="#4eddfb" stroke-width="2"/>
-                  <path d="M69 72H80V111H69Q58 111 58 100V83Q58 72 69 72ZM180 72H191Q202 72 202 83V100Q202 111 191 111H180Z" fill="#5479bd" stroke="#8ceeff" stroke-width="3"/>
-                  <g class="bot-eyes"><rect x="101" y="77" width="20" height="10" rx="5" fill="#66faff"/><rect x="139" y="77" width="20" height="10" rx="5" fill="#66faff"/></g>
-                  <path d="M116 108Q130 117 144 108" fill="none" stroke="#d48cff" stroke-width="4" stroke-linecap="round"/>
-                  <path d="M95 54H165" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+                <g class="mech-antenna" filter="url(#mechGlow)"><path d="M160 42V18" stroke="#83faff" stroke-width="5" stroke-linecap="round"/><circle cx="160" cy="13" r="8" fill="#ff8be8"/><path d="M142 30Q160 12 178 30" fill="none" stroke="#4cecff" stroke-width="2"/></g>
+                <g class="mech-head">
+                  <path d="M105 60L126 42H194L215 60L224 112L204 145H116L96 112Z" fill="url(#mechArmor)" stroke="#b4faff" stroke-width="3"/>
+                  <path d="M112 70L130 57H190L208 70L211 108L194 128H126L109 108Z" fill="url(#mechDark)" stroke="#47dfff" stroke-width="2.5"/>
+                  <path d="M124 86L145 77H175L196 86L184 105H136Z" fill="#061b39" stroke="#58f2ff" stroke-width="2"/>
+                  <path class="mech-eyes" d="M133 91L151 85L147 96H132ZM187 91L169 85L173 96H188Z" fill="#74ffff" filter="url(#mechGlow)"/>
+                  <path d="M144 115H176M151 121H169" stroke="#e28bff" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M96 78L79 91V119L101 127M224 78L241 91V119L219 127" fill="none" stroke="#78dcf8" stroke-width="10" stroke-linejoin="round"/>
+                  <path d="M81 92L67 104V125L91 137M239 92L253 104V125L229 137" fill="none" stroke="#d0faff" stroke-width="5"/>
+                  <path d="M120 48L132 35H188L200 48" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="3"/>
                 </g>
-                <path d="M116 143V157H144V143" fill="#547fc0" stroke="#7deaff" stroke-width="3"/>
-                <g class="bot-body">
-                  <path d="M75 170Q83 153 105 153H155Q177 153 185 170L202 238Q205 251 190 256H70Q55 251 58 238Z" fill="url(#botShell)" stroke="#9cf4ff" stroke-width="3"/>
-                  <path d="M91 173Q98 164 112 164H148Q162 164 169 173L180 225H80Z" fill="url(#botDark)" stroke="#5fe8ff" stroke-width="2"/>
-                  <path d="M130 177L151 189V211L130 223L109 211V189Z" fill="#193b72" stroke="url(#botGlow)" stroke-width="3"/>
-                  <text x="130" y="204" text-anchor="middle" font-size="17" font-weight="bold" fill="#9cffff">AI</text>
-                  <path d="M69 188L49 210L58 229L80 217M191 188L211 210L202 229L180 217" fill="none" stroke="#86dfff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M48 210L35 224M212 210L225 224" stroke="#f3a4ff" stroke-width="9" stroke-linecap="round"/>
-                  <path d="M100 255L94 282M160 255L166 282" stroke="#82dfff" stroke-width="15" stroke-linecap="round"/>
-                  <path d="M82 286H106M154 286H178" stroke="#b1f7ff" stroke-width="8" stroke-linecap="round"/>
+                <path d="M145 143V158H175V143" fill="#2d639c" stroke="#7ceeff" stroke-width="3"/>
+                <g class="mech-shoulders">
+                  <path d="M105 160L75 154L48 177L58 218L94 228L116 199ZM215 160L245 154L272 177L262 218L226 228L204 199Z" fill="url(#mechArmor)" stroke="#9bf3ff" stroke-width="3"/>
+                  <path d="M64 179L88 168L99 190L85 211L65 207ZM256 179L232 168L221 190L235 211L255 207Z" fill="#163d70" stroke="#5ceaff" stroke-width="2"/>
+                  <path d="M52 182L37 200L47 224L69 229M268 182L283 200L273 224L251 229" fill="none" stroke="#77e8ff" stroke-width="12" stroke-linecap="round"/>
+                  <path d="M43 222L29 238M277 222L291 238" stroke="#f18bea" stroke-width="9" stroke-linecap="round"/>
                 </g>
-                <g class="bot-spark"><circle cx="35" cy="104" r="3" fill="#61faff"/><circle cx="223" cy="142" r="4" fill="#e68aff"/><path d="M37 150h12m-6-6v12M213 62h12m-6-6v12" stroke="#67edff" stroke-width="2"/></g>
+                <g class="mech-torso">
+                  <path d="M105 153L128 145H192L215 153L230 246L207 270H113L90 246Z" fill="url(#mechArmor)" stroke="#c1faff" stroke-width="3"/>
+                  <path d="M119 165L139 157H181L201 165L210 235L193 251H127L110 235Z" fill="url(#mechDark)" stroke="#53e8ff" stroke-width="2.5"/>
+                  <path d="M160 174L190 193V225L160 244L130 225V193Z" fill="#102f61" stroke="url(#mechCore)" stroke-width="4" filter="url(#mechGlow)"/>
+                  <circle cx="160" cy="209" r="16" fill="#0b274b" stroke="#8fffff" stroke-width="2"/>
+                  <path d="M160 190V228M141 209H179M147 196L173 222M173 196L147 222" stroke="#8cffff" stroke-width="2" opacity=".85"/>
+                  <circle cx="160" cy="209" r="5" fill="#fff" filter="url(#mechGlow)"/>
+                  <path d="M116 174L126 182M204 174L194 182M108 230L125 240M212 230L195 240" stroke="#70eaff" stroke-width="3"/>
+                  <path d="M130 257H190" stroke="#f4a1ff" stroke-width="3" stroke-linecap="round"/>
+                </g>
+                <g class="mech-legs">
+                  <path d="M120 266L114 314L132 331L153 322L155 269ZM200 266L206 314L188 331L167 322L165 269Z" fill="url(#mechArmor)" stroke="#aaf5ff" stroke-width="3"/>
+                  <path d="M121 289H150L147 315L132 321L117 311ZM199 289H170L173 315L188 321L203 311Z" fill="#102c58" stroke="#5eeaff" stroke-width="2"/>
+                  <path d="M132 330L124 343H91L84 334L96 320L117 318ZM188 330L196 343H229L236 334L224 320L203 318Z" fill="#326a9f" stroke="#a8f7ff" stroke-width="3"/>
+                  <path d="M93 340H128M192 340H227" stroke="#5cf4ff" stroke-width="4" stroke-linecap="round"/>
+                </g>
+                <g class="mech-lights" fill="#70fbff" filter="url(#mechGlow)"><circle cx="61" cy="165" r="4"/><circle cx="259" cy="165" r="4"/><circle cx="116" cy="151" r="3"/><circle cx="204" cy="151" r="3"/></g>
+                <g class="bot-spark"><circle cx="30" cy="76" r="4" fill="#67faff"/><circle cx="289" cy="112" r="5" fill="#e68aff"/><path d="M25 145h16m-8-8v16M276 55h16m-8-8v16" stroke="#67edff" stroke-width="2.5"/></g>
               </svg>
               <div class="ai-scanline"></div><div class="ai-label label-left">AI CORE <b>ONLINE</b></div><div class="ai-label label-right">NETWORK<br>INTELLIGENCE</div>
             </div>
