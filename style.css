@@ -510,3 +510,70 @@
 @media(prefers-reduced-motion:reduce){
  .login-screen:before,.login-screen:after,.login-screen *,.login-screen *:before,.login-screen *:after{animation:none!important;transition:none!important}
 }
+
+/* ===== 3D Earth + Indonesia BTS command center login ===== */
+.network-command-visual{height:355px;max-width:650px;overflow:visible;isolation:isolate}
+.network-command-visual .network-ring{left:51%;top:49%;z-index:0}
+.network-command-visual .ring-a{width:280px;height:280px;border-color:rgba(62,228,255,.25)}
+.network-command-visual .ring-b{width:390px;height:390px;border-color:rgba(174,103,255,.22)}
+.earth-hologram{position:absolute;z-index:2;left:31%;top:49%;width:285px;height:285px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 22px rgba(0,206,255,.24));animation:earthFloat 6s ease-in-out infinite}
+.earth-globe{position:absolute;inset:0;width:100%;height:100%;overflow:visible;animation:earthTurn 28s linear infinite}
+.earth-orbit{position:absolute;left:50%;top:50%;border:1px solid rgba(82,229,255,.38);border-radius:50%;transform:translate(-50%,-50%) rotate(-24deg) scaleY(.37)}
+.earth-orbit-a{width:330px;height:330px;animation:earthOrbit 13s linear infinite}
+.earth-orbit-b{width:365px;height:365px;border-color:rgba(194,111,255,.4);transform:translate(-50%,-50%) rotate(48deg) scaleY(.52);animation:earthOrbitReverse 17s linear infinite}
+.earth-network-arcs{stroke-dasharray:7 8;animation:arcFlow 5s linear infinite}
+.earth-points circle{animation:earthPointPulse 2s ease-in-out infinite}
+.earth-points circle:nth-child(2){animation-delay:.4s}.earth-points circle:nth-child(3){animation-delay:.8s}.earth-points circle:nth-child(4){animation-delay:1.2s}
+.indonesia-lights circle{animation:indonesiaPulse 1.7s ease-in-out infinite alternate}
+.indonesia-lights circle:nth-child(even){animation-delay:.7s}
+.earth-tag{position:absolute;z-index:3;padding:6px 9px;border:1px solid rgba(92,224,255,.34);border-radius:5px;background:rgba(2,14,37,.8);backdrop-filter:blur(8px);font-size:7px;letter-spacing:1px;color:#a9eaff;white-space:nowrap;box-shadow:0 0 18px rgba(0,195,255,.12)}
+.earth-tag b{display:block;margin-top:3px;color:#5fffd4;font-size:9px}
+.earth-tag i{display:inline-block;width:5px;height:5px;margin-right:5px;border-radius:50%;background:#51f6c7;box-shadow:0 0 8px #51f6c7}
+.tag-indonesia{left:-7%;bottom:19%}.tag-global{right:-8%;top:19%;border-color:rgba(190,119,255,.4)}
+.tag-global b{color:#d4a3ff}
+.bts-tower{position:absolute;z-index:4;width:55px;height:95px;color:#6ceeff;filter:drop-shadow(0 0 9px rgba(0,220,255,.65));animation:towerSignal 3s ease-in-out infinite}
+.bts-tower svg{width:100%;height:100%;overflow:visible}
+.bts-tower span{position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);font-size:6px;letter-spacing:1px;color:#8bdfff;white-space:nowrap}
+.tower-left{left:-3%;top:4%;transform:scale(.78);animation-delay:.5s}
+.tower-right{right:-1%;bottom:4%;transform:scale(.9);color:#d49aff;animation-delay:1.3s}
+.signal-beam{position:absolute;z-index:1;height:2px;transform-origin:left center;background:linear-gradient(90deg,transparent,#60f5ff,#bd83ff,transparent);filter:drop-shadow(0 0 6px #00dfff);opacity:.8}
+.beam-one{width:235px;left:10%;top:28%;transform:rotate(22deg);animation:beamTransmit 2.4s linear infinite}
+.beam-two{width:230px;left:34%;top:72%;transform:rotate(-25deg);animation:beamTransmit 3s linear infinite reverse}
+.network-command-visual .ai-hologram{left:77%;top:49%;width:215px;height:245px;z-index:5;filter:drop-shadow(0 0 30px rgba(0,220,255,.5))}
+.network-command-visual .robot-illustration{width:190px;height:235px}
+.network-command-visual .ai-halo.halo-outer{width:205px;height:205px}
+.network-command-visual .ai-halo.halo-inner{width:165px;height:165px}
+.network-command-visual .ai-label{font-size:6px}
+.network-command-visual .label-left{left:-42px;top:55px}
+.network-command-visual .label-right{right:-45px;bottom:48px}
+.network-command-visual .network-node{z-index:6}
+.network-command-visual .visual-caption{z-index:7}
+@keyframes earthFloat{0%,100%{translate:0 3px}50%{translate:0 -9px}}
+@keyframes earthTurn{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(18deg)}100%{filter:hue-rotate(0deg)}}
+@keyframes earthOrbit{to{transform:translate(-50%,-50%) rotate(336deg) scaleY(.37)}}
+@keyframes earthOrbitReverse{to{transform:translate(-50%,-50%) rotate(-312deg) scaleY(.52)}}
+@keyframes arcFlow{to{stroke-dashoffset:-60}}
+@keyframes earthPointPulse{50%{opacity:.3;r:2}}
+@keyframes indonesiaPulse{to{opacity:.35;filter:drop-shadow(0 0 8px #ff65e4)}}
+@keyframes towerSignal{0%,100%{filter:drop-shadow(0 0 5px rgba(0,220,255,.3))}50%{filter:drop-shadow(0 0 16px rgba(0,220,255,.9))}}
+@keyframes beamTransmit{0%{opacity:.15;background-position:100% 0}50%{opacity:1}100%{opacity:.15;background-position:0 0}}
+@media(max-width:800px){
+ .network-command-visual{height:220px;overflow:hidden}
+ .earth-hologram{left:32%;width:190px;height:190px}
+ .earth-orbit-a{width:225px;height:225px}.earth-orbit-b{width:245px;height:245px}
+ .network-command-visual .ai-hologram{left:76%;width:155px;height:180px;transform:translate(-50%,-50%) scale(.8)}
+ .network-command-visual .robot-illustration{width:145px;height:180px}
+ .network-command-visual .ai-halo.halo-outer{width:155px;height:155px}
+ .network-command-visual .ai-halo.halo-inner{width:125px;height:125px}
+ .bts-tower{transform:scale(.58)!important}
+ .earth-tag{font-size:5px;padding:4px 5px}.earth-tag b{font-size:7px}
+ .tag-indonesia{left:-8%;bottom:12%}.tag-global{right:-5%;top:12%}
+}
+@media(max-width:440px){
+ .network-command-visual{height:180px}
+ .earth-hologram{left:31%;width:155px;height:155px}
+ .earth-orbit-a{width:185px;height:185px}.earth-orbit-b{width:205px;height:205px}
+ .network-command-visual .ai-hologram{left:77%;transform:translate(-50%,-50%) scale(.65)}
+ .bts-tower{display:none}
+ .earth-tag{letter-spacing:.5px}
+}
