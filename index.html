@@ -10,127 +10,79 @@
 </head>
 <body>
   <section id="loginScreen" class="login-screen" aria-labelledby="loginTitle">
+    <canvas id="net" aria-hidden="true"></canvas>
     <div class="login-grid" aria-hidden="true"></div>
-    <div class="login-orbit orbit-one" aria-hidden="true"></div>
-    <div class="login-orbit orbit-two" aria-hidden="true"></div>
-    <div class="login-shell">
-      <div class="login-brand">
-        <div class="login-logo"><span></span><span></span><span></span><span></span></div>
-        <div><strong>SOC<span>·</span>SQM</strong><small>NETWORK OPERATIONS CENTER</small></div>
-      </div>
-      <div class="login-main">
-        <div class="login-visual">
-          <div class="visual-eyebrow"><i></i> SECURE MONITORING ENVIRONMENT</div>
-          <h1>Service Operation Center</h1>
-          <p>Centralized access to network quality, traffic performance, and service monitoring.</p>
-          <div class="network-visual network-command-visual" aria-hidden="true">
-            <div class="earth-hologram">
-              <div class="earth-orbit earth-orbit-a"></div><div class="earth-orbit earth-orbit-b"></div>
-              <svg class="earth-globe" viewBox="0 0 300 300" role="presentation">
-                <defs>
-                  <radialGradient id="earthFill" cx="35%" cy="28%"><stop offset="0" stop-color="#1b9fc8" stop-opacity=".58"/><stop offset=".72" stop-color="#123b83" stop-opacity=".55"/><stop offset="1" stop-color="#07142f" stop-opacity=".92"/></radialGradient>
-                  <linearGradient id="earthStroke"><stop stop-color="#5ffaff"/><stop offset=".55" stop-color="#4d9dff"/><stop offset="1" stop-color="#d47cff"/></linearGradient>
-                  <filter id="earthGlow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                  <clipPath id="earthClip"><circle cx="150" cy="150" r="112"/></clipPath>
-                </defs>
-                <circle cx="150" cy="150" r="118" fill="url(#earthFill)" stroke="url(#earthStroke)" stroke-width="2" filter="url(#earthGlow)"/>
-                <g clip-path="url(#earthClip)" fill="none" stroke="#55dfff" stroke-opacity=".4">
-                  <ellipse cx="150" cy="150" rx="52" ry="112"/><ellipse cx="150" cy="150" rx="92" ry="112"/>
-                  <ellipse cx="150" cy="150" rx="112" ry="40"/><ellipse cx="150" cy="150" rx="112" ry="78"/>
-                  <path d="M25 150H275M150 35V265" stroke-opacity=".55"/>
-                  <path d="M55 85Q150 125 245 85M50 215Q150 175 250 215" stroke="#9a8aff" stroke-opacity=".55"/>
-                  <path d="M85 94l20-12 13 8 4 18-14 12-15-7-10-19zm56 32 18-8 14 9-3 17-16 10-13-12zm-17 30 18-7 12 13-8 17-19 2-10-12zm42 25 18-9 17 10-5 15-20 7-12-10z" fill="#39c8dc" fill-opacity=".35" stroke="#69efff"/>
-                  <path d="M70 164q12-12 25-3l8 13-11 12-18-5zm115-85 18 4 10 14-12 10-18-7z" fill="#6a8eff" fill-opacity=".35"/>
-                </g>
-                <g class="earth-network-arcs" fill="none" stroke="#72f5ff" stroke-width="1.6" filter="url(#earthGlow)">
-                  <path d="M75 160Q145 55 225 130"/><path d="M62 190Q150 95 245 178"/>
-                  <path d="M92 80Q165 210 228 112"/><path d="M82 215Q160 120 225 205"/>
-                </g>
-                <g class="earth-points" fill="#b4ffff" filter="url(#earthGlow)">
-                  <circle cx="75" cy="160" r="4"/><circle cx="225" cy="130" r="4"/><circle cx="62" cy="190" r="3"/><circle cx="245" cy="178" r="4"/><circle cx="150" cy="150" r="5"/>
-                </g>
-                <g class="indonesia-lights" fill="#ff8ce9" filter="url(#earthGlow)">
-                  <circle cx="178" cy="177" r="3.5"/><circle cx="192" cy="185" r="3"/><circle cx="208" cy="191" r="3.5"/><circle cx="220" cy="200" r="2.5"/><circle cx="169" cy="190" r="2.5"/>
-                </g>
-              </svg>
-              <div class="earth-tag tag-indonesia"><i></i> INDONESIA NETWORK <b>ONLINE</b></div>
-              <div class="earth-tag tag-global">GLOBAL CONNECTIVITY <b>99.9%</b></div>
-            </div>
-            <div class="bts-tower tower-left"><svg viewBox="0 0 80 120"><path d="M40 12L12 108M40 12L68 108M12 108H68M21 77H59M27 55H53M33 33H47M24 77L56 55M56 77L24 55M31 55L49 33M49 55L31 33" fill="none" stroke="currentColor" stroke-width="2"/><path d="M40 12V0M27 17Q40 3 53 17M19 25Q40 -1 61 25" fill="none" stroke="#ff8ce9" stroke-width="2" stroke-linecap="round"/></svg><span>BTS NODE 01</span></div>
-            <div class="bts-tower tower-right"><svg viewBox="0 0 80 120"><path d="M40 12L12 108M40 12L68 108M12 108H68M21 77H59M27 55H53M33 33H47M24 77L56 55M56 77L24 55M31 55L49 33M49 55L31 33" fill="none" stroke="currentColor" stroke-width="2"/><path d="M40 12V0M27 17Q40 3 53 17M19 25Q40 -1 61 25" fill="none" stroke="#67f5ff" stroke-width="2" stroke-linecap="round"/></svg><span>BTS NODE 02</span></div>
-            <div class="signal-beam beam-one"></div><div class="signal-beam beam-two"></div>
-            <div class="network-ring ring-a"></div><div class="network-ring ring-b"></div>
-            <div class="ai-hologram" aria-hidden="true">
-              <div class="ai-halo halo-outer"></div><div class="ai-halo halo-inner"></div>
-              <svg class="robot-illustration" viewBox="0 0 320 360" role="presentation">
-                <defs>
-                  <linearGradient id="mechArmor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3fdff"/><stop offset=".28" stop-color="#83d9f4"/><stop offset=".62" stop-color="#3976b5"/><stop offset="1" stop-color="#152958"/></linearGradient>
-                  <linearGradient id="mechDark" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#12365f"/><stop offset="1" stop-color="#030d25"/></linearGradient>
-                  <linearGradient id="mechCore"><stop stop-color="#00f5ff"/><stop offset=".5" stop-color="#8c8cff"/><stop offset="1" stop-color="#ff69dc"/></linearGradient>
-                  <filter id="mechGlow"><feGaussianBlur stdDeviation="5" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                </defs>
-                <g class="mech-antenna" filter="url(#mechGlow)"><path d="M160 42V18" stroke="#83faff" stroke-width="5" stroke-linecap="round"/><circle cx="160" cy="13" r="8" fill="#ff8be8"/><path d="M142 30Q160 12 178 30" fill="none" stroke="#4cecff" stroke-width="2"/></g>
-                <g class="mech-head">
-                  <path d="M105 60L126 42H194L215 60L224 112L204 145H116L96 112Z" fill="url(#mechArmor)" stroke="#b4faff" stroke-width="3"/>
-                  <path d="M112 70L130 57H190L208 70L211 108L194 128H126L109 108Z" fill="url(#mechDark)" stroke="#47dfff" stroke-width="2.5"/>
-                  <path d="M124 86L145 77H175L196 86L184 105H136Z" fill="#061b39" stroke="#58f2ff" stroke-width="2"/>
-                  <path class="mech-eyes" d="M133 91L151 85L147 96H132ZM187 91L169 85L173 96H188Z" fill="#74ffff" filter="url(#mechGlow)"/>
-                  <path d="M144 115H176M151 121H169" stroke="#e28bff" stroke-width="3" stroke-linecap="round"/>
-                  <path d="M96 78L79 91V119L101 127M224 78L241 91V119L219 127" fill="none" stroke="#78dcf8" stroke-width="10" stroke-linejoin="round"/>
-                  <path d="M81 92L67 104V125L91 137M239 92L253 104V125L229 137" fill="none" stroke="#d0faff" stroke-width="5"/>
-                  <path d="M120 48L132 35H188L200 48" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="3"/>
-                </g>
-                <path d="M145 143V158H175V143" fill="#2d639c" stroke="#7ceeff" stroke-width="3"/>
-                <g class="mech-shoulders">
-                  <path d="M105 160L75 154L48 177L58 218L94 228L116 199ZM215 160L245 154L272 177L262 218L226 228L204 199Z" fill="url(#mechArmor)" stroke="#9bf3ff" stroke-width="3"/>
-                  <path d="M64 179L88 168L99 190L85 211L65 207ZM256 179L232 168L221 190L235 211L255 207Z" fill="#163d70" stroke="#5ceaff" stroke-width="2"/>
-                  <path d="M52 182L37 200L47 224L69 229M268 182L283 200L273 224L251 229" fill="none" stroke="#77e8ff" stroke-width="12" stroke-linecap="round"/>
-                  <path d="M43 222L29 238M277 222L291 238" stroke="#f18bea" stroke-width="9" stroke-linecap="round"/>
-                </g>
-                <g class="mech-torso">
-                  <path d="M105 153L128 145H192L215 153L230 246L207 270H113L90 246Z" fill="url(#mechArmor)" stroke="#c1faff" stroke-width="3"/>
-                  <path d="M119 165L139 157H181L201 165L210 235L193 251H127L110 235Z" fill="url(#mechDark)" stroke="#53e8ff" stroke-width="2.5"/>
-                  <path d="M160 174L190 193V225L160 244L130 225V193Z" fill="#102f61" stroke="url(#mechCore)" stroke-width="4" filter="url(#mechGlow)"/>
-                  <circle cx="160" cy="209" r="16" fill="#0b274b" stroke="#8fffff" stroke-width="2"/>
-                  <path d="M160 190V228M141 209H179M147 196L173 222M173 196L147 222" stroke="#8cffff" stroke-width="2" opacity=".85"/>
-                  <circle cx="160" cy="209" r="5" fill="#fff" filter="url(#mechGlow)"/>
-                  <path d="M116 174L126 182M204 174L194 182M108 230L125 240M212 230L195 240" stroke="#70eaff" stroke-width="3"/>
-                  <path d="M130 257H190" stroke="#f4a1ff" stroke-width="3" stroke-linecap="round"/>
-                </g>
-                <g class="mech-legs">
-                  <path d="M120 266L114 314L132 331L153 322L155 269ZM200 266L206 314L188 331L167 322L165 269Z" fill="url(#mechArmor)" stroke="#aaf5ff" stroke-width="3"/>
-                  <path d="M121 289H150L147 315L132 321L117 311ZM199 289H170L173 315L188 321L203 311Z" fill="#102c58" stroke="#5eeaff" stroke-width="2"/>
-                  <path d="M132 330L124 343H91L84 334L96 320L117 318ZM188 330L196 343H229L236 334L224 320L203 318Z" fill="#326a9f" stroke="#a8f7ff" stroke-width="3"/>
-                  <path d="M93 340H128M192 340H227" stroke="#5cf4ff" stroke-width="4" stroke-linecap="round"/>
-                </g>
-                <g class="mech-lights" fill="#70fbff" filter="url(#mechGlow)"><circle cx="61" cy="165" r="4"/><circle cx="259" cy="165" r="4"/><circle cx="116" cy="151" r="3"/><circle cx="204" cy="151" r="3"/></g>
-                <g class="bot-spark"><circle cx="30" cy="76" r="4" fill="#67faff"/><circle cx="289" cy="112" r="5" fill="#e68aff"/><path d="M25 145h16m-8-8v16M276 55h16m-8-8v16" stroke="#67edff" stroke-width="2.5"/></g>
-              </svg>
-              <div class="ai-scanline"></div><div class="ai-label label-left">AI CORE <b>ONLINE</b></div><div class="ai-label label-right">NETWORK<br>INTELLIGENCE</div>
-            </div>
-            </div>
-            <span class="network-node node-a"></span><span class="network-node node-b"></span><span class="network-node node-c"></span><span class="network-node node-d"></span><span class="network-node node-e"></span>
-            <span class="network-link link-a"></span><span class="network-link link-b"></span><span class="network-link link-c"></span><span class="network-link link-d"></span>
-            <div class="visual-caption"><span>NETWORK TOPOLOGY</span><span>SECURE SESSION <b>●</b></span></div>
-          </div>
-          <div class="login-feature-row"><div><b>01</b><span>REAL-TIME<br>VISIBILITY</span></div><div><b>02</b><span>QUALITY<br>INTELLIGENCE</span></div><div><b>03</b><span>SECURE<br>ACCESS</span></div></div>
+    <div class="login-scan" aria-hidden="true"></div>
+    <main class="login-layout">
+      <section class="login-hero">
+        <div class="guardian-brand"><span class="guardian-status"></span><span>SOC · SQM DASHBOARD</span></div>
+        <div class="guardian-stage" aria-hidden="true">
+          <div class="guardian-orbit orbit-one"></div><div class="guardian-orbit orbit-two"></div>
+          <div class="guardian-crosshair"></div>
+          <svg class="guardian-robot" viewBox="0 0 400 400" role="presentation">
+            <defs>
+              <linearGradient id="guardianArmor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dffcff"/><stop offset=".35" stop-color="#4c9bc8"/><stop offset="1" stop-color="#10244d"/></linearGradient>
+              <linearGradient id="guardianChest" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00f5ff"/><stop offset=".5" stop-color="#438cff"/><stop offset="1" stop-color="#bd62ff"/></linearGradient>
+              <radialGradient id="guardianEye"><stop stop-color="#fff"/><stop offset=".35" stop-color="#9fffff"/><stop offset="1" stop-color="#00aaff"/></radialGradient>
+              <filter id="guardianGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <circle class="guardian-ring ring-a" cx="200" cy="200" r="184" fill="none" stroke="#22e6ff" stroke-opacity=".65" stroke-dasharray="4 13" stroke-width="2"/>
+            <circle class="guardian-ring ring-b" cx="200" cy="200" r="163" fill="none" stroke="#a855f7" stroke-opacity=".65" stroke-dasharray="55 18 8 18" stroke-width="2"/>
+            <ellipse cx="200" cy="345" rx="94" ry="15" fill="#22e6ff" opacity=".16" filter="url(#guardianGlow)"/>
+            <path d="M200 66V35" stroke="#22e6ff" stroke-width="4"/><circle cx="200" cy="28" r="8" fill="#22ff9c" filter="url(#guardianGlow)"/>
+            <g class="guardian-head">
+              <path d="M116 77L145 54H255L284 77L294 157L265 190H135L106 157Z" fill="url(#guardianArmor)" stroke="#8ffaff" stroke-width="4"/>
+              <path d="M132 94L151 78H249L268 94L270 145L249 168H151L130 145Z" fill="#041328" stroke="#3b82f6" stroke-width="3"/>
+              <path d="M148 116L176 103H224L252 116L238 143H162Z" fill="#020b1a" stroke="#22e6ff" stroke-width="2"/>
+              <g class="guardian-eyes" filter="url(#guardianGlow)"><ellipse cx="169" cy="126" rx="17" ry="10" fill="url(#guardianEye)"/><ellipse cx="231" cy="126" rx="17" ry="10" fill="url(#guardianEye)"/></g>
+              <path d="M174 154Q200 169 226 154" fill="none" stroke="#22ff9c" stroke-width="4" stroke-linecap="round"/>
+              <path d="M107 100L78 119V164L111 178M293 100L322 119V164L289 178" fill="none" stroke="#5edfff" stroke-width="13" stroke-linejoin="round"/>
+              <path d="M88 127L65 146V174L96 190M312 127L335 146V174L304 190" fill="none" stroke="#b5faff" stroke-width="5"/>
+            </g>
+            <path d="M166 186V205H234V186" fill="#1a4b7d" stroke="#77edff" stroke-width="4"/>
+            <g class="guardian-body">
+              <path d="M112 203L145 188H255L288 203L306 300L272 331H128L94 300Z" fill="url(#guardianArmor)" stroke="#b7faff" stroke-width="4"/>
+              <path d="M131 218L153 207H247L269 218L279 291L254 313H146L121 291Z" fill="#071a36" stroke="#27dfff" stroke-width="3"/>
+              <path d="M200 222L245 250V287L200 310L155 287V250Z" fill="#0b2b54" stroke="url(#guardianChest)" stroke-width="5" filter="url(#guardianGlow)"/>
+              <circle cx="200" cy="267" r="25" fill="#04152d" stroke="#9cffff" stroke-width="3"/>
+              <circle cx="200" cy="267" r="9" fill="#fff" filter="url(#guardianGlow)"/>
+              <path d="M200 238V296M171 267H229M180 247L220 287M220 247L180 287" stroke="#55f5ff" stroke-width="2"/>
+              <path d="M130 232L105 252L116 279L140 273M270 232L295 252L284 279L260 273" fill="none" stroke="#77eaff" stroke-width="9"/>
+              <path d="M141 318L132 354L161 369L188 354L185 320M259 318L268 354L239 369L212 354L215 320" fill="url(#guardianArmor)" stroke="#9df7ff" stroke-width="4"/>
+              <path d="M137 360L115 378H174L185 365M263 360L285 378H226L215 365" fill="#204f83" stroke="#9df7ff" stroke-width="4"/>
+            </g>
+            <g class="guardian-sparks" fill="#22e6ff" filter="url(#guardianGlow)"><circle cx="54" cy="90" r="5"/><circle cx="344" cy="118" r="5"/><circle cx="70" cy="265" r="4"/><circle cx="326" cy="286" r="4"/></g>
+            <path class="guardian-data" d="M35 210H92M308 210H365M200 5V48" stroke="#22e6ff" stroke-width="2" stroke-dasharray="5 7" fill="none"/>
+          </svg>
+          <div class="guardian-scanline"></div>
+          <div class="guardian-hud hud-left">AI CORE <b>ONLINE</b></div>
+          <div class="guardian-hud hud-right">NETWORK<br>INTELLIGENCE</div>
         </div>
-        <div class="login-card">
-          <div class="login-card-top"><span>IDENTITY VERIFICATION</span><span class="lock-icon">⌑</span></div>
-          <div class="login-card-title"><div class="login-kicker">WELCOME BACK</div><h2 id="loginTitle">Sign in to<br>your workspace.</h2><p>Enter your authorized account to continue.</p></div>
-          <form id="loginForm" class="login-form">
-            <label for="loginEmail">EMAIL ADDRESS</label>
-            <div class="login-input-wrap"><span>✉</span><input id="loginEmail" type="email" autocomplete="username" placeholder="name@company.com" required></div>
-            <label for="loginPassword">PASSWORD</label>
-            <div class="login-input-wrap"><span>⌑</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required><button id="togglePassword" class="password-toggle" type="button" aria-label="Tampilkan password">SHOW</button></div>
-            <div id="loginMessage" class="login-message" role="status" aria-live="polite">Authorized personnel only.</div>
-            <button id="loginSubmit" class="login-submit" type="submit"><span>ACCESS DASHBOARD</span><b>→</b></button>
-          </form>
-          <div class="login-security"><span>◈</span> Protected by Supabase Authentication</div>
+        <h1>AI Network Guardian</h1>
+        <p class="guardian-subtitle">Pemantauan kualitas layanan jaringan secara real-time, dijaga oleh asisten AI yang tak pernah tidur.</p>
+        <div class="guardian-stats">
+          <div class="guardian-stat"><span>LATENCY</span><b id="loginLatency">12 ms</b></div>
+          <div class="guardian-stat"><span>THROUGHPUT</span><b id="loginThroughput">840 Mbps</b></div>
+          <div class="guardian-stat"><span>PACKET LOSS</span><b id="loginPacketLoss">0.02%</b></div>
+          <div class="guardian-stat"><span>ACTIVE NODES</span><b id="loginNodes">128</b></div>
         </div>
-      </div>
-      <footer class="login-footer"><span>© SOC-SQM NETWORK MONITORING</span><span>PRIVATE ACCESS <i></i></span><span>SECURE GATEWAY · V1.0</span></footer>
-    </div>
+        <div class="guardian-metric-note">DECORATIVE NETWORK VISUALIZATION · SOC-SQM</div>
+      </section>
+      <section class="login-card" aria-labelledby="loginTitle">
+        <div class="login-card-top"><span>● SECURE ACCESS TERMINAL</span><span class="lock-icon">⌑</span></div>
+        <div class="login-card-title"><div class="login-kicker">IDENTITY VERIFICATION</div><h2 id="loginTitle">Masuk ke Dashboard</h2><p>Gunakan akun resmi untuk melanjutkan ke Network Operations Center.</p></div>
+        <form id="loginForm" class="login-form">
+          <label for="loginEmail">EMAIL ADDRESS</label>
+          <div class="login-input-wrap"><span>✉</span><input id="loginEmail" type="email" autocomplete="username" placeholder="operator@soc-sqm.com" required></div>
+          <label for="loginPassword">PASSWORD</label>
+          <div class="login-input-wrap"><span>⌑</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Masukkan password" required><button id="togglePassword" class="password-toggle" type="button" aria-label="Tampilkan password">SHOW</button></div>
+          <div id="loginMessage" class="login-message" role="status" aria-live="polite">Authorized personnel only.</div>
+          <button id="loginSubmit" class="login-submit" type="submit"><span>ACCESS DASHBOARD</span><b>→</b></button>
+        </form>
+        <div class="login-security"><span>◈</span> Protected by Supabase Authentication</div>
+      </section>
+    </main>
+    <footer class="guardian-footer"><span>© SOC-SQM NETWORK MONITORING</span><span>PRIVATE ACCESS <i></i></span><span>SECURE GATEWAY · V1.0</span></footer>
   </section>
   <div class="app-shell" id="appShell" hidden>
     <aside class="sidebar">
@@ -213,6 +165,24 @@
       <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari Supabase Database setelah login.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: GB (Byte ÷ 1.000.000.000) · SGW: TB</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
     </main>
   </div>
+  <script>
+  (() => {
+    const canvas=document.getElementById('net'); if(!canvas) return;
+    const ctx=canvas.getContext('2d'); let w=0,h=0,nodes=[],packets=[],raf=0;
+    const pointer={x:-1000,y:-1000};
+    function resize(){const dpr=Math.min(devicePixelRatio||1,1.6);w=innerWidth;h=innerHeight;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);const count=Math.min(75,Math.floor(w*h/18000));nodes=Array.from({length:count},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.34,vy:(Math.random()-.5)*.34,r:1+Math.random()*1.5,hot:Math.random()<.06}));}
+    function draw(){ctx.clearRect(0,0,w,h);for(const n of nodes){n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>w)n.vx*=-1;if(n.y<0||n.y>h)n.vy*=-1;}
+      for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<145){ctx.strokeStyle='rgba(34,230,255,'+(.18*(1-d/145))+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();if(Math.random()<.0007)packets.push({a,b,t:0,color:a.hot||b.hot?'#ff4d6d':'#22ff9c'});}}
+      for(const n of nodes){const near=Math.hypot(n.x-pointer.x,n.y-pointer.y)<115;ctx.fillStyle=n.hot?'#ff4d6d':near?'#ffffff':'#22e6ff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=near?15:7;ctx.beginPath();ctx.arc(n.x,n.y,n.r+(near?1.5:0),0,Math.PI*2);ctx.fill();}
+      ctx.shadowBlur=0;packets=packets.filter(p=>p.t<1);for(const p of packets){p.t+=.014;const x=p.a.x+(p.b.x-p.a.x)*p.t,y=p.a.y+(p.b.y-p.a.y)*p.t;ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=12;ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;}raf=requestAnimationFrame(draw);}
+    resize();addEventListener('resize',resize);addEventListener('pointermove',e=>{pointer.x=e.clientX;pointer.y=e.clientY;});
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)draw();
+    const robot=document.querySelector('.guardian-robot'),eyes=document.querySelector('.guardian-eyes');
+    addEventListener('pointermove',e=>{if(!robot||!eyes)return;const r=robot.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height*.34),d=Math.hypot(dx,dy)||1,k=Math.min(5,d/55),ox=dx/d*k,oy=dy/d*k;eyes.setAttribute('transform','translate('+ox+' '+oy+')');});
+    const metrics=[['loginLatency',8,18,' ms',0],['loginThroughput',780,900,' Mbps',0],['loginPacketLoss',0,.06,'%',2],['loginNodes',126,130,'',0]];
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)setInterval(()=>metrics.forEach(([id,min,max,suffix,dec])=>{const el=document.getElementById(id);if(el)el.textContent=(min+Math.random()*(max-min)).toFixed(dec)+suffix;}),1800);
+  })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js" defer></script>
 </body>
