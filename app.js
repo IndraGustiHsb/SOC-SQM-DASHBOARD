@@ -95,7 +95,7 @@ function filtered(fromValue=dateFrom.value,toValue=dateTo.value){
  return rows.filter(r=>r.dt>=from&&r.dt<=to&&matchesActiveFilters(r));
 }
 function bucket(r){const p=period.value;if(p==='daily')return isoDate(r.dt);if(p==='hourly'){const d=new Date(r.dt);d.setMinutes(0,0,0);return d.toISOString()}return r.dt.toISOString()}
-function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>x[key]/=x.n);return x})}
+function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>{if(key!=='Total Traffic(Byte)')x[key]/=x.n});return x})}
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
 function shiftDateByDays(date,days){const shifted=new Date(date.getTime());shifted.setDate(shifted.getDate()+days);return shifted;}
 function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&matchesActiveFilters(r));}
