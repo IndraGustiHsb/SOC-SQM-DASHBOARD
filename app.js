@@ -175,7 +175,7 @@ function updateKpis(cur,cmp){
   }else if(compare.checked){
    delta='<div class="delta neutral">— Compare N/A</div><div class="vs">Data terakhir pada periode Compare tidak tersedia</div>';
   }else delta='<div class="delta neutral">● Live</div><div class="vs">Aktifkan Compare untuk melihat perubahan</div>';
-  const status=!hasValue?'NO DATA':!compare.checked?'LIVE':!hasCompare?'COMPARE N/A':severity===2?'DEGRADED':severity===1?'WARNING':'NORMAL';
+  const status=!hasValue?'NO DATA':!compare.checked?'LIVE':!hasCompare?'COMPARE N/A':severity===2?'DEGRADED':severity===1?'MONITORING':'NORMAL';
   const stateClass=severity===2?'degraded':severity===1?'warning':'';
   const statusClass=!hasValue||!compare.checked||!hasCompare?'status-live':severity===2?'status-bad':severity===1?'status-warning':'status-good';
   const valueText=displayValue!==null&&Number.isFinite(displayValue)?s.format(displayValue):'—';
