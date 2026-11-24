@@ -33,7 +33,7 @@ function parseDate(value,mode=dataMode){
 }
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
-function metricValue(r,key){const raw=r[key];const v=raw===null||raw===undefined||raw===''?0:Number(raw);if(!Number.isFinite(v))return 0;return v}
+function metricValue(r,key){const raw=r?.[key];if(raw===null||raw===undefined||String(raw).trim()==='')return null;const v=Number(raw);return Number.isFinite(v)?v:null}
 function formatTrafficValue(value){const n=Math.max(0,Number(value)||0);return n.toLocaleString('en-US',{maximumFractionDigits:5})+' TB';}
 function setTrafficPresentation(){const s=specs[0];s.unit='TB';s.format=formatTrafficValue;const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic (TB)';}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
@@ -96,7 +96,17 @@ function filtered(fromValue=dateFrom.value,toValue=dateTo.value){
  return rows.filter(r=>r.dt>=from&&r.dt<=to&&matchesActiveFilters(r));
 }
 function bucket(r){const p=period.value;if(p==='daily')return isoDate(r.dt);if(p==='hourly'){const d=new Date(r.dt);d.setMinutes(0,0,0);return d.toISOString()}return r.dt.toISOString()}
-function aggregate(data){const m=new Map();data.forEach(r=>{const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0});const x=m.get(k);x.n++;metricKeys.forEach(key=>x[key]=(x[key]||0)+metricValue(r,key))});return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{metricKeys.forEach(key=>{if(key!=='Total Traffic(Byte)')x[key]/=x.n});return x})}
+function aggregate(data){
+ const m=new Map();
+ data.forEach(r=>{
+  const k=bucket(r);if(!m.has(k))m.set(k,{k,n:0,__counts:{}});const x=m.get(k);x.n++;
+  metricKeys.forEach(key=>{const value=metricValue(r,key);if(value===null)return;x[key]=(x[key]||0)+value;x.__counts[key]=(x.__counts[key]||0)+1});
+ });
+ return [...m.values()].sort((a,b)=>a.k.localeCompare(b.k)).map(x=>{
+  metricKeys.forEach(key=>{const count=x.__counts[key]||0;if(!count){x[key]=null;return}if(key!=='Total Traffic(Byte)')x[key]/=count});
+  return x;
+ });
+}
 function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
 function shiftDateByDays(date,days){const shifted=new Date(date.getTime());shifted.setDate(shifted.getDate()+days);return shifted;}
 function filteredDateTime(start,end){return rows.filter(r=>r.dt>=start&&r.dt<=end&&matchesActiveFilters(r));}
@@ -142,29 +152,33 @@ function updateKpis(cur,cmp){
  const last=cur.length?cur[cur.length-1]:null;
  document.getElementById('kpis').innerHTML=specs.slice(0,8).map((s,i)=>{
   const isTraffic=s.key==='traffic';
-  const val=isTraffic?cur.reduce((sum,point)=>sum+Number(point[s.source]||0),0):(last?last[s.source]:0);
-  const old=compare.checked?(isTraffic?cmp.reduce((sum,point)=>sum+Number(point[s.source]||0),0):compareLastValue(cur,cmp,s.source)):null;
-  const hasCompare=old!==null&&Number.isFinite(old)&&old!==0;
-  const absoluteSeverity=(isTraffic||s.key==='tcp')?0:absoluteMetricSeverity(s.key,val);
-  const compareSeverity=compareMetricSeverity(s.key,val,hasCompare?old:null);
-  // Status is the worse of the absolute KPI threshold and a worsening Compare trend.
-  // Improvements versus Compare never cancel an existing absolute threshold breach.
+  const validCurrent=!!last&&(isTraffic?cur.some(point=>Number.isFinite(point[s.source])):Number.isFinite(last[s.source]));
+  const val=!validCurrent?null:(isTraffic?cur.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):last[s.source]);
+  const compareValue=compare.checked?(isTraffic?(cmp.length?cmp.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):null):compareLastValue(cur,cmp,s.source)):null;
+  const hasCompare=compareValue!==null&&Number.isFinite(compareValue);
+  const old=hasCompare?compareValue:null;
+  const hasValue=val!==null&&Number.isFinite(val);
+  const absoluteSeverity=(!hasValue||isTraffic||s.key==='tcp')?0:absoluteMetricSeverity(s.key,val);
+  const compareSeverity=hasValue?compareMetricSeverity(s.key,val,hasCompare?old:null):0;
   const severity=Math.max(absoluteSeverity,compareSeverity);
   let delta='';
-  if(hasCompare){
+  if(hasCompare&&hasValue){
    const d=val-old;
    const isRate=['tcp','dlRetx','ulRetx','dlLoss','ulLoss'].includes(s.key);
-   const deltaText=isRate?`${Math.abs(d).toFixed(2)} pp`:`${Math.abs(d/Math.abs(old)*100).toFixed(2)}%`;
+   const deltaText=isRate?Math.abs(d).toFixed(2)+' pp':(old!==0?Math.abs(d/Math.abs(old)*100).toFixed(2)+'%':(Math.abs(d).toFixed(2)+' '+(isTraffic?'TB':'ms')));
    const trendBad=s.key==='tcp'?d<0:['dlRetx','ulRetx','dlLoss','ulLoss','e2e','synAck','synSyn'].includes(s.key)?d>0:false;
    const trafficDecline=isTraffic&&d<0;
    const trendClass=trafficDecline||(!isTraffic&&trendBad)?'bad':(d===0?'neutral':'good');
-   delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${deltaText}</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
-  }else delta='<div class="delta neutral">● Live</div><div class="vs">Status berdasarkan ambang KPI</div>';
-  const status=severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
+   delta=`<div class="delta ${trendClass}">${d>0?'▲':d<0?'▼':'●'} ${deltaText}</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
+  }else if(compare.checked){
+   delta='<div class="delta neutral">— Compare N/A</div><div class="vs">Tidak ada titik waktu pembanding yang cocok</div>';
+  }else delta='<div class="delta neutral">● Live</div><div class="vs">Aktifkan Compare untuk melihat perubahan</div>';
+  const status=!hasValue?'NO DATA':severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
   const stateClass=severity===2?'degraded':severity===1?'warning':'';
-  const statusClass=severity===2?'status-bad':severity===1?'status-warning':hasCompare?'status-good':'status-live';
-  const note=severity===1?'Perlu dipantau':'';
-  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
+  const statusClass=!hasValue?'status-live':severity===2?'status-bad':severity===1?'status-warning':hasCompare?'status-good':'status-live';
+  const displayValue=hasValue?s.format(val):'—';
+  const note=!hasValue?'Data metrik tidak tersedia':severity===1?'Perlu dipantau':'';
+  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass} ${!hasValue?'no-data':''}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${displayValue}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
  }).join('');
 }
 function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)',dataMode==='sgw'?'TOTAL TRAFFIC (TB)':'TOTAL TRAFFIC (GB / TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);if(bodyId==='dataBody'){const count=document.getElementById('dataCount');if(count)count.textContent=`Menampilkan ${out.length.toLocaleString('id-ID')} dari ${data.length.toLocaleString('id-ID')} data`; }document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td>${dataMode==='sgw'?'<td>'+esc(r.SGW)+'</td>':'<td>'+esc(r.REGION)+'</td><td>'+esc(r.CIRCLE)+'</td><td>'+esc(r.BRANCH)+'</td><td>'+esc(r.KABUPATEN)+'</td>'}<td class="num">${esc(specs[0].format(metricValue(r,'Total Traffic(Byte)')))}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
