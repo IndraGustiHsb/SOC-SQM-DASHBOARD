@@ -107,12 +107,36 @@ function compareLastValue(current,comparison,key){if(!current.length||!compariso
 function compareRangeLabel(){if(!activeCompareWindow)return'Compare';const fmt=d=>d.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});const days=Number(document.getElementById('compareDays')?.value||1);return `Compare D-${days} (${fmt(activeCompareWindow.start)} – ${fmt(activeCompareWindow.end)})`;}
 function drawChart(spec,cur,cmp){const ctx=document.getElementById('ch_'+spec.key).getContext('2d');if(charts[spec.key])charts[spec.key].destroy();const labels=cur.map(x=>new Date(x.k).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+(period.value==='15min'?' '+new Date(x.k).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''));const datasets=[{label:'Current',data:cur.map(x=>x[spec.source]),borderColor:spec.color,backgroundColor:rgba(spec.color,.12),borderWidth:2,pointRadius:cur.length<=1?4:1.5,pointHoverRadius:5,tension:.3,fill:true,spanGaps:true}];if(compare.checked){datasets.push({label:compareRangeLabel(),data:compareSeries(cur,cmp,spec.source),borderColor:'#FFB020',backgroundColor:'rgba(255,176,32,.06)',borderWidth:2,borderDash:[7,5],pointRadius:0,pointHoverRadius:4,tension:.3,fill:false,spanGaps:true})}charts[spec.key]=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:context=>`${context.dataset.label}: ${spec.format(Number(context.parsed.y||0))}`}}},scales:{x:{ticks:{color:'#74a6ca',maxTicksLimit:8},grid:{color:'rgba(24,85,122,.25)'}},y:{ticks:{color:'#74a6ca',maxTicksLimit:5,callback:value=>spec.key==='traffic'?formatTrafficValue(value):Number(value).toLocaleString('en-US',{maximumFractionDigits:2})},grid:{color:'rgba(24,85,122,.25)'}}}}});}
 function renderCharts(cur,cmp){const box=document.getElementById('charts');box.innerHTML=specs.map(s=>`<div class="chart-card"><div class="chart-head"><h3>${s.title}${s.key==='traffic'?'':' ('+s.unit+')'}</h3><div class="legend"><b style="color:${s.color}">━━ Current</b>${compare.checked?` <b style="color:#FFB020">┄┄ ${compareRangeLabel()}</b>`:''}</div></div><canvas id="ch_${s.key}"></canvas></div>`).join('');specs.forEach(s=>drawChart(s,cur,cmp))}
-function metricDegraded(key,val,old){
- const lowerIsWorse=new Set(['dlRetx','ulRetx','dlLoss','ulLoss','e2e','synAck','synSyn']);
- const higherIsWorse=new Set(['tcp']);
- if(old!==null&&Number.isFinite(old)&&old!==0){const change=(val-old)/Math.abs(old)*100;if(lowerIsWorse.has(key))return change>0.5;if(higherIsWorse.has(key))return change<-.5;return false;}
- const limits={tcp:v=>v<98,dlRetx:v=>v>3,ulRetx:v=>v>3,dlLoss:v=>v>1,ulLoss:v=>v>1,e2e:v=>v>150,synAck:v=>v>100,synSyn:v=>v>100};
- return limits[key]?limits[key](val):false;
+function absoluteMetricSeverity(key,val){
+ const limits={
+  tcp:v=>v<97?2:v<98?1:0,
+  dlRetx:v=>v>5?2:v>2?1:0,
+  ulRetx:v=>v>5?2:v>2?1:0,
+  dlLoss:v=>v>0.5?2:v>0.1?1:0,
+  ulLoss:v=>v>0.5?2:v>0.1?1:0,
+  e2e:v=>v>200?2:v>100?1:0,
+  synAck:v=>v>200?2:v>100?1:0,
+  synSyn:v=>v>200?2:v>100?1:0
+ };
+ return limits[key]?limits[key](Number(val)||0):0;
+}
+function compareMetricSeverity(key,val,old){
+ if(old===null||!Number.isFinite(old))return 0;
+ const change=Number(val)-Number(old);
+ if(key==='tcp'){const drop=-change;return drop>=2?2:drop>=1?1:0;}
+ if(['dlRetx','ulRetx'].includes(key))return change>=2?2:change>=1?1:0;
+ if(['dlLoss','ulLoss'].includes(key))return change>=.3?2:change>=.1?1:0;
+ if(['e2e','synAck','synSyn'].includes(key)){
+  if(old<=0)return 0;
+  const rise=change/Math.abs(old)*100;
+  return rise>=40?2:rise>=20?1:0;
+ }
+ return 0;
+}
+function sustainedDegraded(cur,s){
+ if(cur.length<3)return false;
+ const lastThree=cur.slice(-3);
+ return lastThree.every(point=>absoluteMetricSeverity(s.key,point[s.source])===2);
 }
 function updateKpis(cur,cmp){
  const last=cur.length?cur[cur.length-1]:null;
@@ -121,7 +145,11 @@ function updateKpis(cur,cmp){
   const val=isTraffic?cur.reduce((sum,point)=>sum+Number(point[s.source]||0),0):(last?last[s.source]:0);
   const old=compare.checked?(isTraffic?cmp.reduce((sum,point)=>sum+Number(point[s.source]||0),0):compareLastValue(cur,cmp,s.source)):null;
   const hasCompare=old!==null&&Number.isFinite(old)&&old!==0;
-  const degraded=metricDegraded(s.key,val,hasCompare?old:null);
+  const absoluteSeverity=isTraffic?0:absoluteMetricSeverity(s.key,val);
+  const compareSeverity=isTraffic?0:compareMetricSeverity(s.key,val,hasCompare?old:null);
+  // Severe absolute breaches are promoted to DEGRADED only after 3 consecutive buckets.
+  const sustained=absoluteSeverity===2&&sustainedDegraded(cur,s);
+  const severity=Math.max(absoluteSeverity===2&&!sustained?1:absoluteSeverity,compareSeverity);
   let delta='';
   if(hasCompare){
    const d=val-old,p=d/Math.abs(old)*100;
@@ -129,8 +157,11 @@ function updateKpis(cur,cmp){
    const trendClass=isTraffic?'neutral':(trendBad?'bad':(d===0?'neutral':'good'));
    delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${Math.abs(p).toFixed(2)}%</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
   }else delta='<div class="delta neutral">● Live</div><div class="vs">Status berdasarkan ambang KPI</div>';
-  const status=degraded?'DEGRADED':(hasCompare?'NORMAL':'LIVE');
-  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${degraded?'degraded':''}"><div class="kpi-status ${degraded?'status-bad':hasCompare?'status-good':'status-live'}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}</div>`;
+  const status=severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
+  const stateClass=severity===2?'degraded':severity===1?'warning':'';
+  const statusClass=severity===2?'status-bad':severity===1?'status-warning':hasCompare?'status-good':'status-live';
+  const note=absoluteSeverity===2&&!sustained&&compareSeverity<2?'Belum 3 interval berturut-turut':severity===1?'Perlu dipantau':'';
+  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
  }).join('');
 }
 function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)',dataMode==='sgw'?'TOTAL TRAFFIC (TB)':'TOTAL TRAFFIC (GB / TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);if(bodyId==='dataBody'){const count=document.getElementById('dataCount');if(count)count.textContent=`Menampilkan ${out.length.toLocaleString('id-ID')} dari ${data.length.toLocaleString('id-ID')} data`; }document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td>${dataMode==='sgw'?'<td>'+esc(r.SGW)+'</td>':'<td>'+esc(r.REGION)+'</td><td>'+esc(r.CIRCLE)+'</td><td>'+esc(r.BRANCH)+'</td><td>'+esc(r.KABUPATEN)+'</td>'}<td class="num">${esc(specs[0].format(metricValue(r,'Total Traffic(Byte)')))}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
