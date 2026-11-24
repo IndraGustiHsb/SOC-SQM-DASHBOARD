@@ -133,11 +133,6 @@ function compareMetricSeverity(key,val,old){
  }
  return 0;
 }
-function sustainedDegraded(cur,s){
- if(cur.length<3)return false;
- const lastThree=cur.slice(-3);
- return lastThree.every(point=>absoluteMetricSeverity(s.key,point[s.source])===2);
-}
 function updateKpis(cur,cmp){
  const last=cur.length?cur[cur.length-1]:null;
  document.getElementById('kpis').innerHTML=specs.slice(0,8).map((s,i)=>{
@@ -147,20 +142,22 @@ function updateKpis(cur,cmp){
   const hasCompare=old!==null&&Number.isFinite(old)&&old!==0;
   const absoluteSeverity=isTraffic?0:absoluteMetricSeverity(s.key,val);
   const compareSeverity=isTraffic?0:compareMetricSeverity(s.key,val,hasCompare?old:null);
-  // Severe absolute breaches are promoted to DEGRADED only after 3 consecutive buckets.
-  const sustained=absoluteSeverity===2&&sustainedDegraded(cur,s);
-  const severity=Math.max(absoluteSeverity===2&&!sustained?1:absoluteSeverity,compareSeverity);
+  // Status is the worse of the absolute KPI threshold and a worsening Compare trend.
+  // Improvements versus Compare never cancel an existing absolute threshold breach.
+  const severity=Math.max(absoluteSeverity,compareSeverity);
   let delta='';
   if(hasCompare){
-   const d=val-old,p=d/Math.abs(old)*100;
+   const d=val-old;
+   const isRate=['tcp','dlRetx','ulRetx','dlLoss','ulLoss'].includes(s.key);
+   const deltaText=isRate?`${Math.abs(d).toFixed(2)} pp`:`${Math.abs(d/Math.abs(old)*100).toFixed(2)}%`;
    const trendBad=s.key==='tcp'?d<0:['dlRetx','ulRetx','dlLoss','ulLoss','e2e','synAck','synSyn'].includes(s.key)?d>0:false;
    const trendClass=isTraffic?'neutral':(trendBad?'bad':(d===0?'neutral':'good'));
-   delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${Math.abs(p).toFixed(2)}%</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
+   delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${deltaText}</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
   }else delta='<div class="delta neutral">● Live</div><div class="vs">Status berdasarkan ambang KPI</div>';
   const status=severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
   const stateClass=severity===2?'degraded':severity===1?'warning':'';
   const statusClass=severity===2?'status-bad':severity===1?'status-warning':hasCompare?'status-good':'status-live';
-  const note=absoluteSeverity===2&&!sustained&&compareSeverity<2?'Belum 3 interval berturut-turut':severity===1?'Perlu dipantau':'';
+  const note=severity===1?'Perlu dipantau':'';
   return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}</span><div class="value">${s.format(val)}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
  }).join('');
 }
