@@ -154,7 +154,7 @@ function updateKpis(cur,cmp){
   const isTraffic=s.key==='traffic';
   const validCurrent=!!last&&(isTraffic?cur.some(point=>Number.isFinite(point[s.source])):Number.isFinite(last[s.source]));
   const val=!validCurrent?null:(isTraffic?cur.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):last[s.source]);
-  const compareValue=compare.checked?(isTraffic?(cmp.length?cmp.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):null):compareLastValue(cur,cmp,s.source)):null;
+  const compareValue=compare.checked?(isTraffic?(cmp.some(point=>Number.isFinite(point[s.source]))?cmp.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):null):compareLastValue(cur,cmp,s.source)):null;
   const hasCompare=compareValue!==null&&Number.isFinite(compareValue);
   const old=hasCompare?compareValue:null;
   const hasValue=val!==null&&Number.isFinite(val);
@@ -331,7 +331,7 @@ function fromDatabaseRow(row,mode){
  const out={'15 Minutes':row.fifteen_minutes,dt:parseDate(row.fifteen_minutes,mode)};
  if(mode==='wilayah'){out.REGION=row.region||'';out.BRANCH=row.branch||'';out.KABUPATEN=row.kabupaten||'';out.CIRCLE=row.circle||'';}
  else {out.SGW=row.sgw||'';out.REGION='';out.BRANCH='';out.KABUPATEN='';out.CIRCLE='';}
- Object.entries(DB_FIELDS[mode]).forEach(([source,target])=>{out[source]=row[target]??0;});
+ Object.entries(DB_FIELDS[mode]).forEach(([source,target])=>{out[source]=row[target]??null;});
  return out;
 }
 async function readSupabaseRows(mode){
