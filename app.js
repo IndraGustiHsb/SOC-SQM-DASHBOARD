@@ -3,7 +3,7 @@ let sourceInitialized=false, pendingUpload=null;
 let datasetInfo={wilayah:null,sgw:null};
 let activeCurrentWindow=null, activeCompareWindow=null;
 const specs=[
- {key:'traffic',title:'Total Traffic',unit:'Byte',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0})+' Byte'},
+ {key:'traffic',title:'Total Traffic',unit:'',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0})+' Byte'},
  {key:'dlRetx',title:'DL TCP Retransmission',unit:'%',color:'#20E887',icon:'⟳',source:'Downlink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
  {key:'ulRetx',title:'UL TCP Retransmission',unit:'%',color:'#FF9D00',icon:'◉',source:'Uplink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
  {key:'tcp',title:'TCP Success Rate',unit:'%',color:'#A84CFF',icon:'⬡',source:'TCP Connection Success Rate (Included RST)(%)',format:v=>v.toFixed(2)+'%'},
@@ -34,7 +34,7 @@ function parseDate(value,mode=dataMode){
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const raw=r[key];const v=raw===null||raw===undefined||raw===''?0:Number(raw);if(!Number.isFinite(v))return 0;if(key==='Total Traffic(Byte)')return dataMode==='sgw'?v*1e12:v;return v}
-function setTrafficPresentation(){const s=specs[0];s.unit='Byte';s.format=v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0})+' Byte';const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic (Byte)';}
+function setTrafficPresentation(){const s=specs[0];s.unit='';s.format=v=>Number(v||0).toLocaleString('en-US',{maximumFractionDigits:0})+' Byte';const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic (Byte)';}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
 function normalizeLocationHierarchy(data){
  const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
