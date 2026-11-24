@@ -20,7 +20,7 @@
     if (dashboardLoaded) return;
     dashboardLoaded = true;
     const script = document.createElement('script');
-    script.src = 'app.js?v=20261124-kpi6';
+    script.src = 'app.js?v=20261124-kpi7';
     script.onerror = () => {
       dashboardLoaded = false;
       appShell.hidden = true;
