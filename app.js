@@ -153,13 +153,9 @@ function updateKpis(cur,cmp){
  document.getElementById('kpis').innerHTML=specs.slice(0,8).map((s,i)=>{
   const isTraffic=s.key==='traffic';
   const currentLatest=last&&Number.isFinite(last[s.source])?last[s.source]:null;
-  const hasValue=isTraffic
-   ?cur.some(point=>Number.isFinite(point[s.source]))
-   :currentLatest!==null;
-  // Traffic card keeps the period total as its headline value; status and delta use the latest interval only.
-  const displayValue=isTraffic
-   ?(hasValue?cur.reduce((sum,point)=>sum+(Number.isFinite(point[s.source])?point[s.source]:0),0):null)
-   :currentLatest;
+  // Total Traffic displays the latest available interval, not a sum of all records in the selected period.
+  const hasValue=currentLatest!==null;
+  const displayValue=currentLatest;
   const compareLatest=compare.checked?compareLastValue(cur,cmp,s.source):null;
   const hasCompare=compareLatest!==null&&Number.isFinite(compareLatest);
   const statusCurrent=currentLatest;
@@ -180,7 +176,7 @@ function updateKpis(cur,cmp){
   const statusClass=!hasValue||!compare.checked||!hasCompare?'status-live':severity===2?'status-bad':severity===1?'status-warning':'status-good';
   const valueText=displayValue!==null&&Number.isFinite(displayValue)?s.format(displayValue):'—';
   const note=!hasValue?'Data metrik tidak tersedia':compare.checked&&!hasCompare?'Pembanding data terakhir tidak tersedia':'';
-  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass} ${!hasValue?'no-data':''}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}${isTraffic?' · TOTAL PERIODE':''}</span><div class="value">${valueText}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
+  return `<div class="kpi ${['green','orange','purple','pink'][i%4]} ${stateClass} ${!hasValue?'no-data':''}"><div class="kpi-status ${statusClass}">${status}</div><div class="icon">${s.icon}</div><h3>${s.title}</h3><span class="unit">${s.unit}${isTraffic?' · LATEST RECORD':''}</span><div class="value">${valueText}</div>${delta}${note?`<div class="kpi-note">${note}</div>`:''}</div>`;
  }).join('');
 }
 function renderTable(data,bodyId='tableBody',headId='tableHead',limit=500){const cols=dataMode==='sgw'?['15 Minutes','SGW','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)']:['15 Minutes','REGION','CIRCLE','BRANCH','KABUPATEN','Total Traffic(Byte)','Downlink TCP Retransmission Rate(%)','Uplink TCP Retransmission Rate(%)','TCP Connection Success Rate (Included RST)(%)','Downlink TCP Packet Loss Rate(%)','Uplink TCP Packet Loss Rate(%)','E2E Delay(ms)','SYN ACK-ACK Delay(ms)','SYN-SYN ACK Delay(ms)'];document.getElementById(headId).innerHTML='<tr>'+cols.map((c,i)=>`<th>${i===0?'DATE / TIME':c.replace('Total Traffic(Byte)',dataMode==='sgw'?'TOTAL TRAFFIC (TB)':'TOTAL TRAFFIC (GB / TB)').replace('Downlink TCP Retransmission Rate(%)','DL RETX (%)').replace('Uplink TCP Retransmission Rate(%)','UL RETX (%)').replace('TCP Connection Success Rate (Included RST)(%)','TCP SUCCESS (%)').replace('Downlink TCP Packet Loss Rate(%)','DL LOSS (%)').replace('Uplink TCP Packet Loss Rate(%)','UL LOSS (%)').replace('SYN ACK-ACK Delay(ms)','SYN ACK-ACK (ms)').replace('SYN-SYN ACK Delay(ms)','SYN-SYN ACK (ms)')}</th>`).join('')+'</tr>';const out=[...data].sort((a,b)=>b.dt-a.dt).slice(0,limit);if(bodyId==='dataBody'){const count=document.getElementById('dataCount');if(count)count.textContent=`Menampilkan ${out.length.toLocaleString('id-ID')} dari ${data.length.toLocaleString('id-ID')} data`; }document.getElementById(bodyId).innerHTML=out.map((r,i)=>`<tr><td>${esc(r['15 Minutes'])}</td>${dataMode==='sgw'?'<td>'+esc(r.SGW)+'</td>':'<td>'+esc(r.REGION)+'</td><td>'+esc(r.CIRCLE)+'</td><td>'+esc(r.BRANCH)+'</td><td>'+esc(r.KABUPATEN)+'</td>'}<td class="num">${esc(specs[0].format(metricValue(r,'Total Traffic(Byte)')))}</td><td class="num">${Number(r['Downlink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Retransmission Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['TCP Connection Success Rate (Included RST)(%)']).toFixed(2)}</td><td class="num">${Number(r['Downlink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['Uplink TCP Packet Loss Rate(%)']).toFixed(2)}</td><td class="num">${Number(r['E2E Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN ACK-ACK Delay(ms)']).toFixed(0)}</td><td class="num">${Number(r['SYN-SYN ACK Delay(ms)']).toFixed(0)}</td></tr>`).join('');return out}
