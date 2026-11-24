@@ -156,7 +156,8 @@ function updateKpis(cur,cmp){
    const isRate=['tcp','dlRetx','ulRetx','dlLoss','ulLoss'].includes(s.key);
    const deltaText=isRate?`${Math.abs(d).toFixed(2)} pp`:`${Math.abs(d/Math.abs(old)*100).toFixed(2)}%`;
    const trendBad=s.key==='tcp'?d<0:['dlRetx','ulRetx','dlLoss','ulLoss','e2e','synAck','synSyn'].includes(s.key)?d>0:false;
-   const trafficDecline=isTraffic&&d<0;\n   const trendClass=trafficDecline||(!isTraffic&&trendBad)?'bad':(d===0?'neutral':'good');
+   const trafficDecline=isTraffic&&d<0;
+   const trendClass=trafficDecline||(!isTraffic&&trendBad)?'bad':(d===0?'neutral':'good');
    delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${deltaText}</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
   }else delta='<div class="delta neutral">● Live</div><div class="vs">Status berdasarkan ambang KPI</div>';
   const status=severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
