@@ -123,6 +123,11 @@ function absoluteMetricSeverity(key,val){
 function compareMetricSeverity(key,val,old){
  if(old===null||!Number.isFinite(old))return 0;
  const change=Number(val)-Number(old);
+ if(key==='traffic'){
+  if(old<=0)return 0;
+  const drop=(Number(old)-Number(val))/Number(old)*100;
+  return drop>=20?2:drop>=10?1:0;
+ }
  if(key==='tcp'){const drop=-change;return drop>=2?2:drop>=1?1:0;}
  if(['dlRetx','ulRetx'].includes(key))return change>=2?2:change>=1?1:0;
  if(['dlLoss','ulLoss'].includes(key))return change>=.3?2:change>=.1?1:0;
@@ -141,7 +146,7 @@ function updateKpis(cur,cmp){
   const old=compare.checked?(isTraffic?cmp.reduce((sum,point)=>sum+Number(point[s.source]||0),0):compareLastValue(cur,cmp,s.source)):null;
   const hasCompare=old!==null&&Number.isFinite(old)&&old!==0;
   const absoluteSeverity=isTraffic?0:absoluteMetricSeverity(s.key,val);
-  const compareSeverity=isTraffic?0:compareMetricSeverity(s.key,val,hasCompare?old:null);
+  const compareSeverity=compareMetricSeverity(s.key,val,hasCompare?old:null);
   // Status is the worse of the absolute KPI threshold and a worsening Compare trend.
   // Improvements versus Compare never cancel an existing absolute threshold breach.
   const severity=Math.max(absoluteSeverity,compareSeverity);
@@ -151,7 +156,7 @@ function updateKpis(cur,cmp){
    const isRate=['tcp','dlRetx','ulRetx','dlLoss','ulLoss'].includes(s.key);
    const deltaText=isRate?`${Math.abs(d).toFixed(2)} pp`:`${Math.abs(d/Math.abs(old)*100).toFixed(2)}%`;
    const trendBad=s.key==='tcp'?d<0:['dlRetx','ulRetx','dlLoss','ulLoss','e2e','synAck','synSyn'].includes(s.key)?d>0:false;
-   const trendClass=isTraffic?'neutral':(trendBad?'bad':(d===0?'neutral':'good'));
+   const trafficDecline=isTraffic&&d<0;\n   const trendClass=trafficDecline||(!isTraffic&&trendBad)?'bad':(d===0?'neutral':'good');
    delta=`<div class="delta ${trendClass}">${d>=0?'▲':'▼'} ${deltaText}</div><div class="vs">vs ${s.format(old)} <span>(Compare)</span></div>`;
   }else delta='<div class="delta neutral">● Live</div><div class="vs">Status berdasarkan ambang KPI</div>';
   const status=severity===2?'DEGRADED':severity===1?'WARNING':(hasCompare?'NORMAL':'LIVE');
