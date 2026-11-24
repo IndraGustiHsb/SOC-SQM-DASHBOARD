@@ -133,7 +133,7 @@
 
       <section id="mapView" class="view">
         <section class="region-traffic-card panel">
-          <div class="region-section-title"><div><h2>Network Map · Regional Performance</h2><span id="regionDateCaption">Ringkasan berdasarkan data CSV</span><div id="csvLoadNotice" class="csv-load-notice" hidden></div></div><div class="map-filter-row"><label>Compare · From<input id="regionFrom" type="date"></label><label>To<input id="regionTo" type="date"></label><label>Filter KQI<select id="regionMetric"><option value="Total Traffic(Byte)">Total Traffic (GB)</option><option value="Downlink TCP Retransmission Rate(%)">DL TCP Retransmission (%)</option><option value="Uplink TCP Retransmission Rate(%)">UL TCP Retransmission (%)</option><option value="TCP Connection Success Rate (Included RST)(%)">TCP Success Rate (%)</option><option value="Downlink TCP Packet Loss Rate(%)">DL Packet Loss (%)</option><option value="Uplink TCP Packet Loss Rate(%)">UL Packet Loss (%)</option><option value="E2E Delay(ms)">E2E Delay (ms)</option><option value="SYN ACK-ACK Delay(ms)">SYN ACK-ACK Delay (ms)</option><option value="SYN-SYN ACK Delay(ms)">SYN-SYN ACK Delay (ms)</option></select></label></div></div>
+          <div class="region-section-title"><div><h2>Network Map · Regional Performance</h2><span id="regionDateCaption">Ringkasan berdasarkan data CSV</span><div id="csvLoadNotice" class="csv-load-notice" hidden></div></div><div class="map-filter-row"><label>Compare · From<input id="regionFrom" type="date"></label><label>To<input id="regionTo" type="date"></label><label>Filter KQI<select id="regionMetric"><option value="Total Traffic(Byte)">Total Traffic (Byte)</option><option value="Downlink TCP Retransmission Rate(%)">DL TCP Retransmission (%)</option><option value="Uplink TCP Retransmission Rate(%)">UL TCP Retransmission (%)</option><option value="TCP Connection Success Rate (Included RST)(%)">TCP Success Rate (%)</option><option value="Downlink TCP Packet Loss Rate(%)">DL Packet Loss (%)</option><option value="Uplink TCP Packet Loss Rate(%)">UL Packet Loss (%)</option><option value="E2E Delay(ms)">E2E Delay (ms)</option><option value="SYN ACK-ACK Delay(ms)">SYN ACK-ACK Delay (ms)</option><option value="SYN-SYN ACK Delay(ms)">SYN-SYN ACK Delay (ms)</option></select></label></div></div>
           <div id="regionMapKpis" class="network-map-kpis"></div>
           <div class="network-map-stage">
             <div id="topologyCanvas" class="region-map-canvas"></div>
@@ -151,7 +151,7 @@
         <section class="data-page panel"><div class="table-head"><div><h2>SQM Detail Data</h2><p>Raw monitoring data from uploaded CSV</p></div><button id="downloadCsv2" class="btn">⇩ Export CSV</button></div><section class="upload-panel">
  <div class="upload-heading"><div><h3>Upload Raw Data CSV</h3><p>Pilih sumber data, periksa file, lalu tambahkan ke dataset dashboard. Format tanggal CSV: MM/DD/YY HH:mm (contoh 10/03/26 19:00 = 3 Oct 2026 19:00 WIB). Format lama MM/D/YYYY tetap didukung.</p></div><span class="upload-mode-tag">APPEND MODE</span></div>
  <div class="upload-controls">
-  <label>Jenis Data<select id="uploadSource"><option value="wilayah">Raw Data Wilayah (Traffic Byte → GB)</option><option value="sgw">Raw Data SGW (Traffic tetap TB)</option></select></label>
+  <label>Jenis Data<select id="uploadSource"><option value="wilayah">Raw Data Wilayah (Traffic Byte → GB)</option><option value="sgw">Raw Data SGW (Traffic TB → Byte)</option></select></label>
   <label class="upload-file-label">Pilih File CSV<input id="uploadFile" type="file" accept=".csv,text/csv"></label>
   <button id="previewUpload" class="btn" type="button">Periksa File</button>
   <button id="confirmUpload" class="btn upload-primary" type="button" disabled>＋ Tambahkan Data</button>
@@ -162,7 +162,7 @@
 <div class="data-toolbar"><input id="dataSearch" placeholder="Search..."/><span id="dataCount"></span></div><div class="table-wrap large"><table><thead id="dataHead"></thead><tbody id="dataBody"></tbody></table></div></section>
       </section>
 
-      <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari Supabase Database setelah login.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: GB (Byte ÷ 1.000.000.000) · SGW: TB</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
+      <section id="settingsView" class="view"><div class="settings panel"><h2>Settings</h2><p>Dashboard membaca Raw Data Wilayah dan Raw Data SGW dari Supabase Database setelah login.</p><div class="setting-row"><b>Traffic unit</b><span>Wilayah: Byte (nilai asli) · SGW: TB dikonversi ke Byte (× 1.000.000.000.000)</span></div><div class="setting-row"><b>Data source</b><span>Wilayah dan SGW dimuat terpisah</span></div></div></section>
     </main>
   </div>
   <script>
