@@ -1015,3 +1015,24 @@ html:has(#loginScreen:not([hidden])),body:has(#loginScreen:not([hidden])){height
 .kpi.warning:before{background:radial-gradient(circle,rgba(255,176,32,.17),transparent 68%)}
 .kpi.warning .icon{color:#ffbd4a;background:rgba(255,176,32,.13)}
 .kpi .kpi-note{margin-top:5px;color:#ffbd4a;font-size:9px;line-height:1.35}
+
+/* SOC-SQM dashboard refinement: clearer KPI hierarchy and resilient states */
+.kpi-grid{align-items:stretch;gap:12px}
+.kpi{min-width:0;min-height:158px;padding:17px 14px 13px;border-radius:11px;background:linear-gradient(145deg,rgba(8,31,52,.96),rgba(4,17,31,.98));box-shadow:inset 0 1px 0 rgba(173,226,255,.045),0 8px 22px rgba(0,0,0,.16)}
+.kpi h3{max-width:calc(100% - 8px);font-size:10px;line-height:1.45;letter-spacing:.45px}
+.kpi .value{margin-top:8px;font-size:clamp(19px,1.55vw,25px);font-weight:800;letter-spacing:-.45px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi .unit{font-size:9px;letter-spacing:.65px}
+.kpi .delta{margin-top:7px;font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .vs{margin-top:3px;color:#8eacc5;font-size:9px;overflow-wrap:anywhere}
+.kpi-status{z-index:1;min-width:65px;text-align:center}
+.kpi.no-data{border-style:dashed;border-color:rgba(121,167,202,.3);background:linear-gradient(145deg,rgba(12,27,42,.82),rgba(5,14,25,.9));box-shadow:none}
+.kpi.no-data .value{color:#91a9bd}
+.kpi.no-data .kpi-note{color:#91a9bd}
+.kpi .delta.bad{color:#ff647d}
+.kpi .delta.good{color:#25e6a0}
+.kpi .delta.neutral{color:#91acc4}
+.kpi:focus-within{outline:2px solid rgba(0,191,255,.65);outline-offset:2px}
+.chart-card{border:1px solid rgba(26,104,148,.52);border-radius:11px;background:linear-gradient(155deg,rgba(7,29,49,.96),rgba(3,15,28,.98));box-shadow:0 8px 24px rgba(0,0,0,.13)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #35cfff;outline-offset:2px}
+@media(max-width:650px){.kpi-grid{gap:9px}.kpi{padding:15px 11px 11px;min-height:146px}.kpi .value{font-size:18px}.kpi-status{right:7px;top:7px;font-size:7px;min-width:58px}}
+@media(prefers-reduced-motion:reduce){.kpi,.kpi:before,.chart-card,button{transition:none!important;animation:none!important}}
