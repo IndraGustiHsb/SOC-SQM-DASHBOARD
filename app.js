@@ -34,8 +34,8 @@ function parseDate(value,mode=dataMode){
 function isoDate(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function fmtDate(d){return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
 function metricValue(r,key){const raw=r[key];const v=raw===null||raw===undefined||raw===''?0:Number(raw);if(!Number.isFinite(v))return 0;return v}
-function formatTrafficValue(value){const n=Math.max(0,Number(value)||0);if(dataMode==='sgw')return n.toLocaleString('en-US',{maximumFractionDigits:3})+' TB';const gb=n/1e9;return gb>=1000?(gb/1000).toLocaleString('en-US',{maximumFractionDigits:2})+' TB':gb.toLocaleString('en-US',{maximumFractionDigits:2})+' GB';}
-function setTrafficPresentation(){const s=specs[0];s.unit=dataMode==='sgw'?'TB':'GB / TB';s.format=formatTrafficValue;const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic ('+s.unit+')';}
+function formatTrafficValue(value){const n=Math.max(0,Number(value)||0);return n.toLocaleString('en-US',{maximumFractionDigits:5})+' TB';}
+function setTrafficPresentation(){const s=specs[0];s.unit='TB';s.format=formatTrafficValue;const opt=document.querySelector('#regionMetric option[value="Total Traffic(Byte)"]');if(opt)opt.textContent='Total Traffic (TB)';}
 const circleNames=new Set(['JAKARTA RAYA','JAVA','KALISUMAPA','SUMATERA']);
 function normalizeLocationHierarchy(data){
  const distinct=field=>new Set(data.map(row=>String(row[field]||'').trim()).filter(Boolean)).size;
