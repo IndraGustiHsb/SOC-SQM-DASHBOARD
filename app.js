@@ -145,7 +145,7 @@ function updateKpis(cur,cmp){
   const val=isTraffic?cur.reduce((sum,point)=>sum+Number(point[s.source]||0),0):(last?last[s.source]:0);
   const old=compare.checked?(isTraffic?cmp.reduce((sum,point)=>sum+Number(point[s.source]||0),0):compareLastValue(cur,cmp,s.source)):null;
   const hasCompare=old!==null&&Number.isFinite(old)&&old!==0;
-  const absoluteSeverity=isTraffic?0:absoluteMetricSeverity(s.key,val);
+  const absoluteSeverity=(isTraffic||s.key==='tcp')?0:absoluteMetricSeverity(s.key,val);
   const compareSeverity=compareMetricSeverity(s.key,val,hasCompare?old:null);
   // Status is the worse of the absolute KPI threshold and a worsening Compare trend.
   // Improvements versus Compare never cancel an existing absolute threshold breach.
