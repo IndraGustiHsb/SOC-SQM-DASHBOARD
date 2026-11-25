@@ -1054,3 +1054,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .kpi-grid .kpi-secondary .icon{width:29px;height:29px;font-size:15px;opacity:.78;}
 .kpi-grid .kpi-secondary .delta,.kpi-grid .kpi-secondary .vs{font-size:8px;}
 @media(max-width:650px){.kpi-grid .kpi-secondary{grid-column:1/-1;min-height:104px;}}
+
+/* Highlight selected traffic area in active filters */
+.active-filter-chip-area{gap:9px;padding:9px 15px;border:1px solid rgba(45,212,255,.78);background:linear-gradient(120deg,rgba(0,190,255,.25),rgba(0,225,190,.13));box-shadow:0 0 0 1px rgba(0,190,255,.12),0 0 18px rgba(0,190,255,.16);}
+.active-filter-chip-area small{color:#7deaff;font-size:10px;letter-spacing:.8px;}
+.active-filter-chip-area strong{color:#ffffff;font-size:16px;font-weight:850;letter-spacing:.35px;text-shadow:0 0 12px rgba(0,210,255,.45);}
+@media(max-width:650px){.active-filter-chip-area{padding:8px 11px;}.active-filter-chip-area strong{font-size:14px;}}
