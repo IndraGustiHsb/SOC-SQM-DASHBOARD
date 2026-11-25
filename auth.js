@@ -20,7 +20,7 @@
     if (dashboardLoaded) return;
     dashboardLoaded = true;
     const script = document.createElement('script');
-    script.src = 'app.js?v=20261126-restore-e2e';
+    script.src = 'app.js?v=20261126-hide-e2e-kpi';
     script.onload = () => {
       // Ensure screenshot control exists even if the dashboard bundle is cached or initialized late.
       const topStatus = document.querySelector('.topbar .top-status');
