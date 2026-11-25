@@ -21,6 +21,11 @@
     dashboardLoaded = true;
     const script = document.createElement('script');
     script.src = 'app.js?v=20261124-kpi9';
+    script.onload = () => {
+      const deleteScript = document.createElement('script');
+      deleteScript.src = 'raw-data-delete.js?v=20261125-1';
+      document.body.appendChild(deleteScript);
+    };
     script.onerror = () => {
       dashboardLoaded = false;
       appShell.hidden = true;
