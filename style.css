@@ -788,7 +788,7 @@
 
 
 /* ===== Full-screen 50/50 login composition ===== */
-html:has(.login-screen),body:has(.login-screen){height:100%;overflow:hidden}
+html:has(#loginScreen:not([hidden])),body:has(#loginScreen:not([hidden])){height:100%;overflow:hidden}
 .login-screen{
   height:100vh!important;height:100svh!important;
   min-height:0!important;max-height:100vh!important;
