@@ -6,6 +6,7 @@
   <title>SOC - SQM Monitoring</title>
   <link rel="stylesheet" href="style.css?v=20261124-kpi3">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="papaparse.min.js"></script>
 </head>
 <body>
@@ -103,7 +104,7 @@
           <h1>SOC - SQM MONITORING</h1>
           <p>Network Quality Performance Monitoring</p>
         </div>
-        <div class="top-status"><i></i> MONITORING <span class="clock">--:--:--</span><small>WIB</small><button id="logoutButton" class="logout-btn" type="button">LOG OUT ↗</button></div>
+        <div class="top-status"><i></i> MONITORING <span class="clock">--:--:--</span><small>WIB</small><button id="captureDashboard" class="screenshot-btn" type="button" title="Ambil screenshot dashboard" aria-label="Ambil screenshot dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg></button> <button id="logoutButton" class="logout-btn" type="button">LOG OUT ↗</button></div>
       </header>
 
       <section id="dashboardView" class="view active-view">
