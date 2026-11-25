@@ -51,7 +51,20 @@
               backgroundColor: '#030b16', scale: Math.min(2, window.devicePixelRatio || 1),
               useCORS: true, logging: false, scrollX: 0, scrollY: 0,
               windowWidth: Math.max(document.documentElement.clientWidth, target.scrollWidth),
-              windowHeight: Math.max(target.scrollHeight, target.offsetHeight)
+              windowHeight: Math.max(target.scrollHeight, target.offsetHeight),
+              onclone: (clonedDoc) => {
+                const captureArea = clonedDoc.getElementById('dashboardView');
+                if (captureArea) {
+                  captureArea.querySelector('.filters')?.remove();
+                  captureArea.querySelector('.table-panel')?.remove();
+                  captureArea.querySelectorAll(':scope > section:not(#activeFilterSummary):not(#kpis):not(#charts)').forEach(node => node.remove());
+                  captureArea.style.paddingTop = '0';
+                  captureArea.style.height = 'auto';
+                  captureArea.style.minHeight = '0';
+                  captureArea.style.overflow = 'visible';
+                }
+                clonedDoc.body.style.background = '#030b16';
+              }
             });
             const link = document.createElement('a');
             link.download = 'SOC-SQM-Dashboard-' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
