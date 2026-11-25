@@ -151,7 +151,7 @@ function compareMetricSeverity(key,val,old){
 }
 function updateKpis(cur,cmp){
  const last=cur.length?cur[cur.length-1]:null;
- document.getElementById('kpis').innerHTML=specs.map((s,i)=>{
+ document.getElementById('kpis').innerHTML=specs.filter(s=>s.key!=='e2e').map((s,i)=>{
   const isTraffic=s.key==='traffic';
   const currentLatest=last&&Number.isFinite(last[s.source])?last[s.source]:null;
   // Total Traffic displays the latest available interval, not a sum of all records in the selected period.
