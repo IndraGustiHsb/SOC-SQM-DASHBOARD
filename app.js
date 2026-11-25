@@ -470,6 +470,17 @@ function initializeDashboard(payload){
   document.getElementById('confirmUpload').onclick=confirmCsvUpload;
   document.getElementById('uploadSource').onchange=()=>{pendingUpload=null;document.getElementById('confirmUpload').disabled=true;document.getElementById('uploadPreview').hidden=true;};
   dataSearch.oninput=()=>{const q=dataSearch.value.trim().toLowerCase();const found=rows.filter(r=>Object.values(r).some(v=>String(v??'').toLowerCase().includes(q)));renderTable(found,'dataBody','dataHead',1000)};
+  const captureButton=document.getElementById('captureDashboard');
+  if(captureButton)captureButton.addEventListener('click',async()=>{
+   if(typeof window.html2canvas!=='function'){alert('Fitur screenshot belum berhasil dimuat. Periksa koneksi internet lalu coba lagi.');return;}
+   const target=document.getElementById('dashboardView');if(!target)return;
+   const originalText=captureButton.innerHTML;captureButton.disabled=true;captureButton.title='Sedang membuat screenshot...';
+   try{
+    const canvas=await window.html2canvas(target,{backgroundColor:'#030b16',scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,scrollX:0,scrollY:-window.scrollY,windowWidth:Math.max(document.documentElement.clientWidth,target.scrollWidth),windowHeight:Math.max(document.documentElement.clientHeight,target.scrollHeight)});
+    const link=document.createElement('a');link.download='SOC-SQM-Dashboard-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';link.href=canvas.toDataURL('image/png');link.click();
+   }catch(error){console.error('Screenshot error:',error);alert('Screenshot gagal dibuat. Silakan coba lagi.');}
+   finally{captureButton.disabled=false;captureButton.innerHTML=originalText;captureButton.title='Ambil screenshot dashboard';}
+  });
   sourceInitialized=true;
  }
  const first=datasets.wilayah.length?'wilayah':datasets.sgw.length?'sgw':'wilayah';document.getElementById('dataSource').value=first;activateDataSource(first);
