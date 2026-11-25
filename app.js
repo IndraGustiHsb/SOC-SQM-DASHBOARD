@@ -486,11 +486,20 @@ function bindDashboardScreenshot(){
    return;
   }
   const target=document.getElementById('dashboardView');if(!target)return;
-  const original=button.innerHTML;button.disabled=true;button.title='Menyalin screenshot PNG...';
+  const original=button.innerHTML;button.disabled=true;button.title='Membuat PNG HD...';
+  const previousChartDprs=[];
   try{
+   // Render Chart.js canvases at 3x so the graphs themselves stay sharp in the PNG.
+   Object.values(charts).forEach(chart=>{
+    if(!chart||!chart.canvas) return;
+    previousChartDprs.push({chart,dpr:chart.options.devicePixelRatio});
+    chart.options.devicePixelRatio=3;
+    chart.resize();
+   });
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
    const canvas=await window.html2canvas(target,{
     backgroundColor:'#030b16',
-    scale:Math.min(2,window.devicePixelRatio||1),
+    scale:3,
     useCORS:true,logging:false,scrollX:0,scrollY:0,
     windowWidth:Math.max(document.documentElement.clientWidth,target.scrollWidth),
     windowHeight:Math.max(target.scrollHeight,target.offsetHeight),
@@ -522,6 +531,7 @@ function bindDashboardScreenshot(){
    console.error('Dashboard screenshot copy failed:',error);
    alert('Gagal menyalin PNG. Pastikan halaman dibuka melalui HTTPS dan izinkan akses clipboard pada browser.');
   }finally{
+   previousChartDprs.forEach(({chart,dpr})=>{if(chart&&chart.canvas){if(dpr===undefined)delete chart.options.devicePixelRatio;else chart.options.devicePixelRatio=dpr;chart.resize();}});
    button.disabled=false;
    if(button.title==='Menyalin screenshot PNG...')button.title='Copy screenshot PNG ke clipboard';
   }
