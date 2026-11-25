@@ -20,7 +20,7 @@
     if (dashboardLoaded) return;
     dashboardLoaded = true;
     const script = document.createElement('script');
-    script.src = 'app.js?v=20261124-kpi9';
+    script.src = 'app.js?v=20261126-screenshot1';
     script.onload = () => {
       const deleteScript = document.createElement('script');
       deleteScript.src = 'raw-data-delete.js?v=20261125-1';
