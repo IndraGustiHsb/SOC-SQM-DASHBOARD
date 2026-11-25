@@ -1136,3 +1136,48 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline-color:#45e
 @media(prefers-reduced-motion:no-preference){
   .panel,.kpi,.chart-card,.btn,.nav-btn{transition:border-color .22s ease,box-shadow .22s ease,background .22s ease,transform .22s ease}
 }
+
+
+/* Filter controls: enforce readable high-contrast text and surfaces */
+.filters{
+  background:linear-gradient(145deg,rgba(7,31,55,.97),rgba(3,17,33,.98));
+  border:1px solid rgba(35,174,235,.38);
+  border-radius:11px;
+  box-shadow:inset 0 0 24px rgba(0,157,255,.075),0 8px 24px rgba(0,0,0,.2);
+}
+.filters>label,.filters label,.compare-toggle{color:#c9eaff!important;font-weight:700;letter-spacing:.15px}
+.filters input,
+.filters select,
+.filters .compare-mode,
+.filters .filter-picker input,
+.filters input[type="date"],
+.filters input[type="text"]{
+  color:#f5fcff!important;
+  -webkit-text-fill-color:#f5fcff;
+  background:linear-gradient(180deg,#0b2c4b 0%,#061d35 100%)!important;
+  border:1px solid rgba(49,190,245,.72)!important;
+  border-radius:7px!important;
+  box-shadow:inset 0 1px 0 rgba(188,235,255,.08),inset 0 0 13px rgba(0,156,255,.09),0 0 8px rgba(0,140,255,.06);
+}
+.filters input::placeholder,.filters .filter-picker input::placeholder{color:#9bbbd3!important;opacity:1}
+.filters input:focus,.filters select:focus,.filters .filter-picker input:focus{
+  color:#fff!important;background:linear-gradient(180deg,#103b60,#082746)!important;
+  border-color:#54eaff!important;outline:2px solid rgba(45,218,255,.2)!important;
+  box-shadow:0 0 0 3px rgba(0,190,255,.12),0 0 18px rgba(0,190,255,.2)!important;
+}
+.filters select option,.filters select optgroup,
+.filter-picker-menu{background:#071d33!important;color:#f1faff!important}
+.filter-picker-toggle{color:#7deaff!important}
+.filter-picker-menu{border:1px solid #26bfea!important;box-shadow:0 12px 32px rgba(0,0,0,.65),0 0 16px rgba(0,168,255,.18)!important}
+.filter-picker-option{color:#e9f8ff!important;background:transparent!important}
+.filter-picker-option:hover,.filter-picker-option:focus{background:#0b6096!important;color:#fff!important}
+.compare-toggle span{background:#174663}
+.compare-toggle input:checked+span{background:#08bfff;box-shadow:0 0 13px rgba(0,191,255,.5)}
+.filters .btn,.filters button{color:#f1fcff!important;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+.filters .btn:hover,.filters button:hover{color:#fff!important}
+.filters input[type="date"]{color-scheme:dark}
+@media(max-width:800px){
+ .filters{padding:12px;background:linear-gradient(145deg,rgba(7,31,55,.98),rgba(3,17,33,.99))}
+ .filters>label{min-width:0}
+ .filters input,.filters select,.filters .filter-picker input{min-height:38px}
+}
