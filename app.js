@@ -481,15 +481,53 @@ function bindDashboardScreenshot(){
  button.dataset.bound='1';
  button.addEventListener('click',async()=>{
   if(typeof window.html2canvas!=='function'){alert('Library screenshot belum termuat. Muat ulang halaman dengan Ctrl + F5.');return;}
+  if(!navigator.clipboard||typeof navigator.clipboard.write!=='function'||typeof ClipboardItem==='undefined'){
+   alert('Browser ini belum mendukung Copy PNG. Gunakan Chrome/Edge terbaru melalui HTTPS.');
+   return;
+  }
   const target=document.getElementById('dashboardView');if(!target)return;
-  const original=button.innerHTML;button.disabled=true;button.title='Membuat screenshot...';
+  const original=button.innerHTML;button.disabled=true;button.title='Menyalin screenshot PNG...';
   try{
-   const canvas=await window.html2canvas(target,{backgroundColor:'#030b16',scale:Math.min(2,window.devicePixelRatio||1),useCORS:true,logging:false,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,target.scrollWidth),windowHeight:Math.max(target.scrollHeight,target.offsetHeight)});
-   const link=document.createElement('a');link.download='SOC-SQM-Dashboard-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';link.href=canvas.toDataURL('image/png');link.click();
-  }catch(error){console.error('Dashboard screenshot failed:',error);alert('Screenshot gagal dibuat. Coba lagi.');}
-  finally{button.disabled=false;button.innerHTML=original;button.title='Ambil screenshot seluruh dashboard';}
+   const canvas=await window.html2canvas(target,{
+    backgroundColor:'#030b16',
+    scale:Math.min(2,window.devicePixelRatio||1),
+    useCORS:true,logging:false,scrollX:0,scrollY:0,
+    windowWidth:Math.max(document.documentElement.clientWidth,target.scrollWidth),
+    windowHeight:Math.max(target.scrollHeight,target.offsetHeight),
+    onclone:(clonedDoc)=>{
+     const area=clonedDoc.getElementById('dashboardView');
+     if(!area)return;
+     area.querySelectorAll(':scope > section:not(#activeFilterSummary):not(#kpis):not(#charts)').forEach(node=>node.remove());
+     area.style.height='auto';
+     area.style.minHeight='0';
+     area.style.overflow='visible';
+     area.style.paddingTop='0';
+     area.style.paddingBottom='24px';
+     const summary=area.querySelector('#activeFilterSummary');
+     if(summary)summary.style.display='block';
+     const kpis=area.querySelector('#kpis');
+     if(kpis)kpis.style.display='grid';
+     const charts=area.querySelector('#charts');
+     if(charts)charts.style.display='grid';
+     clonedDoc.body.style.background='#030b16';
+    }
+   });
+   const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('PNG tidak dapat dibuat')),'image/png'));
+   await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+   button.innerHTML='<span>✓</span><span> COPIED PNG</span>';
+   button.title='Screenshot PNG berhasil disalin. Tekan Ctrl + V untuk menempelkan.';
+   if(window.__socScreenshotReset)clearTimeout(window.__socScreenshotReset);
+   window.__socScreenshotReset=setTimeout(()=>{button.innerHTML=original;button.title='Copy screenshot PNG ke clipboard';},2200);
+  }catch(error){
+   console.error('Dashboard screenshot copy failed:',error);
+   alert('Gagal menyalin PNG. Pastikan halaman dibuka melalui HTTPS dan izinkan akses clipboard pada browser.');
+  }finally{
+   button.disabled=false;
+   if(button.title==='Menyalin screenshot PNG...')button.title='Copy screenshot PNG ke clipboard';
+  }
  });
 }
+
 bindDashboardScreenshot();
 initNav();
 loadCsvFiles().then(initializeDashboard).catch(error=>{console.error('CSV ERROR:',error);const notice=document.getElementById('csvLoadNotice');if(notice){notice.hidden=false;notice.classList.add('is-warning');notice.textContent=`Data CSV belum berhasil dimuat: ${error.message}`;}document.getElementById('regionDateCaption').textContent='Network Map dapat dibuka, tetapi data belum tersedia.';});
