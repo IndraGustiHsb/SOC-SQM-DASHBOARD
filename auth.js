@@ -20,7 +20,7 @@
     if (dashboardLoaded) return;
     dashboardLoaded = true;
     const script = document.createElement('script');
-    script.src = 'app.js?v=20261126-area-highlight';
+    script.src = 'app.js?v=20261126-all-filter-highlights';
     script.onload = () => {
       // Ensure screenshot control exists even if the dashboard bundle is cached or initialized late.
       const topStatus = document.querySelector('.topbar .top-status');
