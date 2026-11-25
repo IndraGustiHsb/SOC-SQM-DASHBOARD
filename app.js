@@ -3,15 +3,15 @@ let sourceInitialized=false, pendingUpload=null;
 let datasetInfo={wilayah:null,sgw:null};
 let activeCurrentWindow=null, activeCompareWindow=null;
 const specs=[
- {key:'traffic',title:'Total Traffic',unit:'AUTO',color:'#00BFFF',icon:'◉',source:'Total Traffic(Byte)',format:v=>formatTrafficValue(v)},
- {key:'dlRetx',title:'DL TCP Retransmission',unit:'%',color:'#20E887',icon:'⟳',source:'Downlink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'ulRetx',title:'UL TCP Retransmission',unit:'%',color:'#FF9D00',icon:'◉',source:'Uplink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'tcp',title:'TCP Success Rate',unit:'%',color:'#A84CFF',icon:'⬡',source:'TCP Connection Success Rate (Included RST)(%)',format:v=>v.toFixed(2)+'%'},
- {key:'dlLoss',title:'DL Packet Loss',unit:'%',color:'#00BFFF',icon:'✥',source:'Downlink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'ulLoss',title:'UL Packet Loss',unit:'%',color:'#FF168C',icon:'✥',source:'Uplink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
- {key:'synAck',title:'SYN ACK-ACK Delay',unit:'ms',color:'#A84CFF',icon:'✥',source:'SYN ACK-ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
- {key:'synSyn',title:'SYN-SYN ACK Delay',unit:'ms',color:'#00BFFF',icon:'✥',source:'SYN-SYN ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
- {key:'e2e',title:'E2E Delay',unit:'ms',color:'#7F9DB5',icon:'◌',source:'E2E Delay(ms)',format:v=>v.toFixed(0)+' ms'},
+ {key:'traffic',title:'Total Traffic',unit:'AUTO',color:'#22D3EE',icon:'◉',source:'Total Traffic(Byte)',format:v=>formatTrafficValue(v)},
+ {key:'dlRetx',title:'DL TCP Retransmission',unit:'%',color:'#34D399',icon:'⟳',source:'Downlink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
+ {key:'ulRetx',title:'UL TCP Retransmission',unit:'%',color:'#F59E0B',icon:'◉',source:'Uplink TCP Retransmission Rate(%)',format:v=>v.toFixed(2)+'%'},
+ {key:'tcp',title:'TCP Success Rate',unit:'%',color:'#A78BFA',icon:'⬡',source:'TCP Connection Success Rate (Included RST)(%)',format:v=>v.toFixed(2)+'%'},
+ {key:'dlLoss',title:'DL Packet Loss',unit:'%',color:'#F87171',icon:'✥',source:'Downlink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
+ {key:'ulLoss',title:'UL Packet Loss',unit:'%',color:'#FB7185',icon:'✥',source:'Uplink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
+ {key:'synAck',title:'SYN ACK-ACK Delay',unit:'ms',color:'#FBBF24',icon:'✥',source:'SYN ACK-ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
+ {key:'synSyn',title:'SYN-SYN ACK Delay',unit:'ms',color:'#2DD4BF',icon:'✥',source:'SYN-SYN ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
+ {key:'e2e',title:'E2E Delay',unit:'ms',color:'#94A3B8',icon:'◌',source:'E2E Delay(ms)',format:v=>v.toFixed(0)+' ms'},
 ];
 const metricKeys=specs.map(s=>s.source);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
