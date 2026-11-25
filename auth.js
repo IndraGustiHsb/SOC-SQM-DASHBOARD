@@ -22,6 +22,47 @@
     const script = document.createElement('script');
     script.src = 'app.js?v=20261126-screenshot2';
     script.onload = () => {
+      // Ensure screenshot control exists even if the dashboard bundle is cached or initialized late.
+      const topStatus = document.querySelector('.topbar .top-status');
+      if (topStatus && !document.getElementById('captureDashboard')) {
+        const shot = document.createElement('button');
+        shot.id = 'captureDashboard';
+        shot.type = 'button';
+        shot.title = 'Ambil screenshot seluruh dashboard';
+        shot.setAttribute('aria-label', 'Screenshot dashboard');
+        shot.innerHTML = '<span aria-hidden="true">▣</span> SCREENSHOT';
+        shot.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:108px;height:32px;margin:0 8px;padding:0 10px;border:1px solid #087fb8;border-radius:7px;background:#062b47;color:#45d9ff;font:700 10px Arial,sans-serif;cursor:pointer;position:relative;z-index:20;visibility:visible;opacity:1';
+        const logout = document.getElementById('logoutButton');
+        topStatus.insertBefore(shot, logout || null);
+      }
+      const shotButton = document.getElementById('captureDashboard');
+      if (shotButton && shotButton.dataset.bound !== '1') {
+        shotButton.dataset.bound = '1';
+        shotButton.addEventListener('click', async () => {
+          if (typeof window.html2canvas !== 'function') {
+            alert('Library screenshot belum termuat. Muat ulang halaman dengan Ctrl + F5.');
+            return;
+          }
+          const target = document.getElementById('dashboardView');
+          if (!target) return;
+          shotButton.disabled = true;
+          try {
+            const canvas = await window.html2canvas(target, {
+              backgroundColor: '#030b16', scale: Math.min(2, window.devicePixelRatio || 1),
+              useCORS: true, logging: false, scrollX: 0, scrollY: 0,
+              windowWidth: Math.max(document.documentElement.clientWidth, target.scrollWidth),
+              windowHeight: Math.max(target.scrollHeight, target.offsetHeight)
+            });
+            const link = document.createElement('a');
+            link.download = 'SOC-SQM-Dashboard-' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          } catch (error) {
+            console.error('Screenshot failed:', error);
+            alert('Screenshot gagal dibuat. Silakan coba lagi.');
+          } finally { shotButton.disabled = false; }
+        });
+      }
       const deleteScript = document.createElement('script');
       deleteScript.src = 'raw-data-delete.js?v=20261125-1';
       document.body.appendChild(deleteScript);
