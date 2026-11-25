@@ -1036,3 +1036,9 @@ html:has(#loginScreen:not([hidden])),body:has(#loginScreen:not([hidden])){height
 button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #35cfff;outline-offset:2px}
 @media(max-width:650px){.kpi-grid{gap:9px}.kpi{padding:15px 11px 11px;min-height:146px}.kpi .value{font-size:18px}.kpi-status{right:7px;top:7px;font-size:7px;min-width:58px}}
 @media(prefers-reduced-motion:reduce){.kpi,.kpi:before,.chart-card,button{transition:none!important;animation:none!important}}
+
+/* Dashboard screenshot action */
+.screenshot-btn{width:34px;height:32px;display:inline-grid;place-items:center;padding:0;margin-left:8px;border:1px solid rgba(0,191,255,.48);border-radius:7px;background:linear-gradient(145deg,#073454,#041a2d);color:#35d5ff;cursor:pointer;box-shadow:inset 0 0 12px rgba(0,191,255,.08);transition:.2s}
+.screenshot-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.screenshot-btn:hover{color:#fff;border-color:#22dfff;background:#07517a;box-shadow:0 0 14px rgba(0,191,255,.28)}
+.screenshot-btn:disabled{opacity:.55;cursor:wait}
