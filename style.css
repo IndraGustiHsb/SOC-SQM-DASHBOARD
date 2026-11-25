@@ -1045,3 +1045,12 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .topbar .screenshot-btn:hover{background:#07517a;color:#fff;box-shadow:0 0 14px rgba(0,191,255,.3)}
 .topbar .screenshot-btn:disabled{opacity:.6!important;cursor:wait}
 @media(max-width:800px){.topbar .screenshot-btn{min-width:34px;width:34px;padding:0}.topbar .screenshot-btn span{display:none}}
+
+
+/* E2E Delay is retained as a secondary combined-latency indicator. */
+.kpi-grid .kpi-secondary{grid-column:span 2;min-height:112px;padding:12px 14px 10px;opacity:.86;border-style:dashed;background:linear-gradient(145deg,rgba(7,25,41,.82),rgba(4,15,27,.9));}
+.kpi-grid .kpi-secondary h3{font-size:9px;color:#8da9bd;}
+.kpi-grid .kpi-secondary .value{font-size:clamp(17px,1.25vw,21px);margin-top:5px;color:#c2d2df;}
+.kpi-grid .kpi-secondary .icon{width:29px;height:29px;font-size:15px;opacity:.78;}
+.kpi-grid .kpi-secondary .delta,.kpi-grid .kpi-secondary .vs{font-size:8px;}
+@media(max-width:650px){.kpi-grid .kpi-secondary{grid-column:1/-1;min-height:104px;}}
