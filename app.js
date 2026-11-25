@@ -11,6 +11,7 @@ const specs=[
  {key:'ulLoss',title:'UL Packet Loss',unit:'%',color:'#FF168C',icon:'✥',source:'Uplink TCP Packet Loss Rate(%)',format:v=>v.toFixed(2)+'%'},
  {key:'synAck',title:'SYN ACK-ACK Delay',unit:'ms',color:'#A84CFF',icon:'✥',source:'SYN ACK-ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
  {key:'synSyn',title:'SYN-SYN ACK Delay',unit:'ms',color:'#00BFFF',icon:'✥',source:'SYN-SYN ACK Delay(ms)',format:v=>v.toFixed(0)+' ms'},
+ {key:'e2e',title:'E2E Delay',unit:'ms',color:'#7F9DB5',icon:'◌',source:'E2E Delay(ms)',format:v=>v.toFixed(0)+' ms'},
 ];
 const metricKeys=specs.map(s=>s.source);
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
